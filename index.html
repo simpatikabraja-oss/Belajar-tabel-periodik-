@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tabel Periodik Interaktif SMA Pro</title>
+    <meta name="theme-color" content="#0a0b10">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+    
+    <div id="loader" class="loader-container">
+        <div class="loader-content">
+            <div class="atom-spinner">
+                <div class="electron"></div><div class="electron"></div><div class="electron"></div>
+                <div class="nucleus"></div>
+            </div>
+            <h1 class="loader-title">TABEL PERIODIK PRO</h1>
+            <p style="color: var(--text-secondary); font-size: 0.85rem;">Edisi Lengkap Kimia SMA</p>
+        </div>
+    </div>
+
+    <header>
+        <div class="logo-area">
+            <h2>CHEM<span>LAB PRO</span></h2>
+        </div>
+        
+        <div class="user-stats">
+            <div class="level-badge" id="user-level">Lvl 1</div>
+            <div class="xp-container">
+                <div class="xp-text"><span id="user-xp">0</span> / <span id="next-level-xp">100</span> XP</div>
+                <div class="xp-bar-bg"><div class="xp-bar-fill" id="xp-bar"></div></div>
+            </div>
+            <div class="user-rank" id="user-rank">Pemula Kimia</div>
+        </div>
+
+        <div class="nav-modes">
+            <button id="btn-mode-belajar" class="btn-nav">🧠 Belajar</button>
+            <button id="btn-mode-kuis" class="btn-nav">🎮 Kuis Kilat</button>
+            <button id="btn-mode-ujian" class="btn-nav" style="color: #facc15;">🎓 Ujian Pro</button>
+            <button id="btn-mode-tren" class="btn-nav">📈 Tren</button>
+            <button id="btn-mode-banding" class="btn-nav">⚖️ Banding</button>
+            <button id="btn-mode-kalkulator" class="btn-nav">🧪 Kalkulator</button>
+            <button id="btn-mode-lab" class="btn-nav" style="color: #10b981;">💥 Virtual Lab</button>
+        </div>
+        
+        <div class="header-actions">
+            <button id="btn-export-pdf" class="btn-secondary btn-sm" onclick="window.print()">📄 PDF</button>
+            <button id="btn-export-png" class="btn-secondary btn-sm">📸 PNG</button>
+            <button id="btn-backup" class="btn-icon" title="Backup/Restore Data">💾</button>
+            <button id="theme-toggle" class="btn-icon">
+                <svg id="theme-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="controls-panel">
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="Cari unsur... Tekan [/] untuk fokus kilat" autocomplete="off">
+                <span class="search-icon">🔍</span>
+                <div id="search-suggestions" class="suggestions-box hidden"></div> 
+            </div>
+            
+            <div class="filter-group">
+                <select id="filter-category">
+                    <option value="all">Semua Kategori</option>
+                    <option value="alkali">Logam Alkali</option>
+                    <option value="alkali-tanah">Logam Alkali Tanah</option>
+                    <option value="transisi">Logam Transisi</option>
+                    <option value="pasca-transisi">Logam Pasca-Transisi</option>
+                    <option value="metaloid">Metaloid</option>
+                    <option value="nonlogam">Nonlogam (Lainnya)</option>
+                    <option value="halogen">Halogen (Nonlogam)</option>
+                    <option value="gas-mulia">Gas Mulia (Nonlogam)</option>
+                    <option value="lantanida">Lantanida</option>
+                    <option value="aktinida">Aktinida</option>
+                </select>
+                <button id="btn-show-fav" class="btn-secondary">⭐ Favorit (<span id="fav-count">0</span>)</button>
+                <button id="btn-toggle-heatmap" class="btn-secondary">🌡️ Mode Heatmap</button>
+                <button id="btn-reset" class="btn-secondary">Reset</button>
+            </div>
+        </section>
+
+        <section id="panel-belajar" class="sub-panel hidden-panel glassmorphism">
+            <h4>🧠 Pengaturan Kuis & Hafalan Mandiri</h4>
+            <div class="toggle-grid">
+                <label><input type="checkbox" id="hide-name"> Sembunyikan Nama</label>
+                <label><input type="checkbox" id="hide-symbol"> Sembunyikan Simbol</label>
+                <label><input type="checkbox" id="hide-num"> Sembunyikan No. Atom</label>
+                <button id="btn-flashcard" class="btn-secondary btn-sm" style="margin-top: 10px; width: max-content;">📇 Buka Flashcard Unsur</button>
+            </div>
+        </section>
+
+        <section id="panel-kuis" class="sub-panel hidden-panel glassmorphism">
+            <h4>🎮 Kuis Kilat Tebak Unsur (Speedrun)</h4>
+            <div id="quiz-start-box">
+                <p>Uji refleks hafalan unsurmu dengan batas waktu 20 detik per soal.</p>
+                <button id="start-quiz-btn" class="btn-primary" style="margin-top: 10px;">Mulai Kuis Kilat</button>
+            </div>
+            <div id="quiz-play-box" class="hidden-panel">
+                <div class="quiz-header">
+                    <span id="quiz-question-num">Pertanyaan 1/10</span>
+                    <span id="quiz-timer">Waktu: <span id="timer-count">20</span>s</span>
+                    <span id="quiz-score">Skor: 0</span>
+                </div>
+                <p id="quiz-question-text" class="quiz-question">Mencari pertanyaan...</p>
+                <div id="quiz-options" class="quiz-options-grid"></div>
+            </div>
+        </section>
+
+        <section id="panel-ujian" class="sub-panel hidden-panel glassmorphism" style="border: 1px solid #facc15;">
+            <h4>🎓 Simulasi Ujian Kimia (HOTS)</h4>
+            <div id="exam-start-box">
+                <p>Latihan 50 soal analisis tipe UTBK/SNBT. Selesaikan tanpa terburu-buru, lalu pelajari pembahasannya di akhir sesi.</p>
+                <button id="start-exam-btn" class="btn-primary" style="margin-top: 10px; background:#facc15; color:#000;">Mulai Simulasi Ujian</button>
+            </div>
+            <div id="exam-play-box" class="hidden-panel">
+                <div class="quiz-header" style="color: #facc15;">
+                    <span id="exam-progress">Soal 1/50</span>
+                    <span id="exam-timer">Sisa Waktu: <span id="exam-time-text">60:00</span></span>
+                </div>
+                <div id="exam-question-text" class="exam-q-text">Pertanyaan Ujian...</div>
+                <div id="exam-options" class="exam-opts-list"></div>
+                <div class="exam-footer">
+                    <button id="btn-exam-prev" class="btn-secondary btn-sm" disabled>◀ Sebelumnya</button>
+                    <button id="btn-exam-next" class="btn-primary btn-sm">Selanjutnya ▶</button>
+                </div>
+            </div>
+            <div id="exam-result-box" class="hidden-panel">
+                <h3 style="color:#facc15; margin-bottom: 10px;">📊 Hasil Ujian & Pembahasan</h3>
+                <p id="exam-final-score" style="font-size: 1.2rem; font-weight: bold; margin-bottom: 20px;">Nilai: 100</p>
+                <div id="exam-review-container" class="exam-review-box"></div>
+                <button id="btn-exam-retry" class="btn-primary" style="margin-top: 20px;">Coba Ujian Lain</button>
+            </div>
+        </section>
+
+        <section id="panel-tren" class="sub-panel hidden-panel glassmorphism">
+            <h4>📈 Grafik Tren Periodik Unsur (Periode 3)</h4>
+            <div class="trend-guide-box">
+                <h5>📖 Penjelasan Sifat: <span id="trend-title-display" style="color:#facc15;">Jari-Jari Atom</span></h5>
+                <div class="guide-item">
+                    <span id="trend-icon-display" class="guide-icon">📏</span>
+                    <div id="trend-text-display">
+                        Jarak dari inti atom ke kulit elektron terluar.<br>
+                        • <strong>Seperiode</strong> (Kanan ke Kiri): Makin <span class="hl-besar">BESAR</span><br>
+                        • <strong>Segolongan</strong> (Atas ke Bawah): Makin <span class="hl-besar">BESAR</span>
+                    </div>
+                </div>
+            </div>
+            <div class="chart-controls">
+                <button class="btn-chart-type active" data-property="radius">Jari-Jari Atom</button>
+                <button class="btn-chart-type" data-property="logam">Sifat Logam</button>
+                <button class="btn-chart-type" data-property="ionisasi">Energi Ionisasi</button>
+                <button class="btn-chart-type" data-property="elektronegatif">Elektronegativitas</button>
+                <button class="btn-chart-type" data-property="afinitas">Afinitas Elektron</button>
+            </div>
+            <div class="chart-container">
+                <div id="custom-bar-chart" class="bar-chart-visual"></div>
+            </div>
+        </section>
+
+        <section id="panel-kalkulator" class="sub-panel hidden-panel glassmorphism">
+            <h4>🧪 Kalkulator Kimia SMA (Konversi Molaritas & Mol)</h4>
+            <div class="calc-grid">
+                <div class="calc-inputs">
+                    <label style="display:block; margin-bottom:8px;">Pilih Unsur: <select id="calc-element-select" style="width:100%; margin-top:4px; padding: 10px; border-radius: 8px;"></select></label>
+                    <label style="display:block; margin-bottom:8px;">Masukkan Angka: <input type="number" id="calc-value" placeholder="Jumlah nilai zat..." style="width:100%; margin-top:4px; padding: 10px; border-radius: 8px;"></label>
+                    <label style="display:block; margin-bottom:8px;">Satuan Input: 
+                        <select id="calc-type" style="width:100%; margin-top:4px; padding: 10px; border-radius: 8px;">
+                            <option value="massa">Massa (Gram)</option>
+                            <option value="mol">Jumlah Mol (mol)</option>
+                            <option value="volume">Volume Gas STP (Liter)</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="calc-results" id="calc-output">
+                    <p style="color:var(--text-secondary);">Masukkan nilai angka pada kolom input untuk memulai hitungan otomatis.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="panel-lab" class="sub-panel hidden-panel glassmorphism">
+            <h4>💥 Mini Virtual Lab (Simulator Reaksi)</h4>
+            <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 0.9rem;">Eksperimen aman! Ketik nama/simbol unsur untuk direaksikan.</p>
+            <div class="lab-grid">
+                <div class="lab-selectors">
+                    <input type="text" id="lab-el-1" class="lab-select" list="lab-elements" placeholder="Ketik unsur 1..." autocomplete="off">
+                    <span class="lab-plus">➕</span>
+                    <input type="text" id="lab-el-2" class="lab-select" list="lab-elements" placeholder="Ketik unsur 2..." autocomplete="off">
+                    <datalist id="lab-elements"></datalist>
+                </div>
+                <button id="btn-react" class="btn-primary" style="margin: 15px 0; width: 100%; font-size: 1.1rem;">⚡ REAKSIKAN!</button>
+                <div id="lab-result" class="lab-result-box">
+                    <div class="lab-placeholder">Tabung reaksi kosong. Masukkan kombinasi unsur lalu tekan tombol reaksikan.</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="table-outer-container">
+            <div class="zoom-controls">
+                <button id="btn-zoom-out" class="btn-icon">➖ Perkecil</button>
+                <button id="btn-zoom-reset" class="btn-icon">🔍 Fit Layar</button>
+                <button id="btn-zoom-in" class="btn-icon">➕ Perbesar</button>
+            </div>
+            
+            <div class="table-wrapper" id="capture-area">
+                <div id="periodic-table" class="periodic-grid"></div>
+                <div style="height: 25px;"></div>
+                <div id="f-block-table" class="f-block-grid"></div>
+            </div>
+        </section>
+    </main>
+
+    <div id="element-modal" class="modal">
+        <div class="modal-content glassmorphism">
+            <span class="close-button">&times;</span>
+            <div class="modal-grid">
+                <div id="modal-card-display" class="modal-card-view">
+                    <button id="modal-fav-btn" class="fav-star-toggle">⭐</button>
+                    <div id="m-atomic-num" class="m-num"></div>
+                    <div id="m-symbol" class="m-sym"></div>
+                    <div id="m-name" class="m-nam"></div>
+                    <div id="m-weight" class="m-wgt"></div>
+                </div>
+                <div class="modal-details-info">
+                    <div class="header-modal-title"><h2 id="detail-title-id">-</h2><p class="latin-name">Nama Alias: <em id="detail-title-en">-</em></p></div>
+                    
+                    <div class="info-grid">
+                        <div class="info-item"><span>Golongan/Periode:</span> <strong id="d-group-period">-</strong></div>
+                        <div class="info-item"><span>Kulit Utama (Bohr):</span> <strong id="d-config">-</strong></div>
+                        <div class="info-item"><span>Konfigurasi Subkulit:</span> <strong id="d-orbital">-</strong></div>
+                        <div class="info-item"><span>Bil. Kuantum Terakhir:</span> <strong id="d-kuantum">-</strong></div>
+                        <div class="info-item"><span>Isotop Terkenal:</span> <strong id="d-isotope">-</strong></div>
+                        <div class="info-item"><span>Elektron Valensi:</span> <strong id="d-valensi">-</strong></div>
+                        <div class="info-item"><span>Bilangan Oksidasi:</span> <strong id="d-biloks">-</strong></div>
+                        <div class="info-item"><span>Wujud Suhu Kamar:</span> <strong id="d-wujud">-</strong></div>
+                    </div>
+
+                    <div class="info-block">
+                        <h5 style="color: #10b981; margin-bottom: 8px;">📥 Pengisian Kotak Orbital (Aturan Hund)</h5>
+                        <div id="orbital-visualizer" class="orbital-box-container"></div>
+                    </div>
+
+                    <div class="bohr-model-container">
+                        <h5 style="color: #60a5fa; margin-bottom: 5px;">⚛️ Lintasan Model Bohr</h5>
+                        <div class="bohr-canvas-area"><div id="bohr-visual" class="bohr-atom"><div class="bohr-nucleus"></div></div></div>
+                        <p id="bohr-text-summary" class="bohr-desc"></p>
+                    </div>
+                    
+                    <div class="info-block mnemonic-block"><h5>🧠 Jembatan Keledai:</h5><p id="d-mnemonic">-</p></div>
+                    <div class="info-block hazard-block"><h5>⚠️ Bahaya Lab & Toksisitas:</h5><p id="d-hazard">-</p></div>
+                    <div class="personal-notes"><h5>📝 Catatan Belajar:</h5><textarea id="user-note-input" placeholder="Tulis catatan hafalan di sini..."></textarea></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="compare-modal" class="modal">
+        <div class="modal-content glassmorphism">
+            <span class="close-compare">&times;</span>
+            <h3>⚖️ Perbandingan Sifat Dua Unsur</h3>
+            <div class="compare-selectors" style="display: flex; gap: 15px; margin: 20px 0;">
+                <select id="compare-1" style="flex: 1; padding: 10px; border-radius: 8px;"></select>
+                <span style="font-weight: bold; color: #ef4444; align-self: center;">VS</span>
+                <select id="compare-2" style="flex: 1; padding: 10px; border-radius: 8px;"></select>
+            </div>
+            <div class="compare-grid" id="compare-results" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;"></div>
+        </div>
+    </div>
+
+    <div id="flashcard-modal" class="modal">
+        <div class="modal-content glassmorphism" style="max-width: 400px; text-align: center;">
+            <span class="close-flashcard">&times;</span>
+            <div id="flashcard-box" class="flashcard-card" style="height: 220px; margin: 20px 0; border-radius: 12px; cursor: pointer;">
+                <div class="flashcard-front">
+                    <h1 id="fc-symbol" style="font-size: 4rem;">H</h1><p>No. Atom: <span id="fc-num">1</span></p>
+                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 15px;">Klik untuk membalik kartu</p>
+                </div>
+                <div class="flashcard-back"><h3 id="fc-name">Hidrogen</h3><p id="fc-desc">NONLOGAM</p></div>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <button id="fc-prev" class="btn-secondary">◀ Sebelum</button>
+                <button id="fc-next" class="btn-primary">Lanjut ▶</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="backup-modal" class="modal">
+        <div class="modal-content glassmorphism" style="max-width: 500px; text-align: center;">
+            <span class="close-backup">&times;</span>
+            <h3>💾 Save / Restore Progress</h3>
+            <textarea id="backup-code-input" placeholder="Paste kode kemari..." style="width: 100%; height: 120px; padding: 10px; margin: 15px 0; border-radius: 8px; font-family: monospace; font-size: 0.8rem; resize: none;"></textarea>
+            <div style="display: flex; gap: 15px;">
+                <button id="btn-generate-save" class="btn-secondary" style="flex:1;">📤 Buat Kode</button>
+                <button id="btn-load-save" class="btn-primary" style="flex:1;">📥 Load Kode</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+    <footer class="app-footer"><p>&copy; 2026 ChemLab raja. Dibuat khusus untuk mempelajari tabel periodim unsur Kimia SMA.</p></footer>
+
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
