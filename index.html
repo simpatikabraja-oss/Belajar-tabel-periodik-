@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChemLab Quest - Jelajah Tabel Periodik</title>
-    <meta name="description" content="Belajar 118 unsur kimia lewat tabel periodik interaktif, kuis seru, dan eksperimen virtual yang aman.">
-    <meta name="theme-color" content="#f5f7ff">
+    <title>Ruang Unsur | Tabel Periodik Edukasi</title>
+    <meta name="description" content="Ruang Unsur membantu siswa belajar 118 unsur kimia dengan tabel periodik, tren, eksperimen, dan latihan interaktif.">
+    <meta name="theme-color" content="#f6f1e8">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
@@ -26,7 +26,7 @@
 
     <header>
         <div class="logo-area">
-            <h2>CHEM<span>LAB QUEST</span></h2>
+            <h2>RUANG <span>UNSUR</span></h2>
         </div>
         
         <div class="user-stats">
@@ -62,17 +62,17 @@
     <main class="container">
         <section class="welcome-hero" aria-labelledby="welcome-title">
             <div class="welcome-copy">
-                <p class="hero-eyebrow"><span class="hero-sparkle">✦</span> LAB KIMIA MINI • BELAJAR JADI SERU</p>
-                <h1 id="welcome-title">Kenalan dengan unsur,<br><span>jelajahi dunia sains!</span></h1>
-                <p class="hero-description">Dari hidrogen sampai oganesson, setiap unsur punya cerita. Klik kotaknya, temukan faktanya, lalu kumpulkan XP sambil belajar.</p>
+                <p class="hero-eyebrow"><span class="hero-sparkle">✦</span> EDUKASI KIMIA SMA • TABEL PERIODIK MODERN</p>
+                <h1 id="welcome-title">Memahami unsur, <br><span>mulai dari inti atom hingga tren periodik.</span></h1>
+                <p class="hero-description">Ruang Unsur membantu siswa melihat hubungan antara nomor atom, konfigurasi elektron, golongan, periode, dan sifat unsur dengan cara yang jelas dan terstruktur.</p>
                 <div class="hero-actions">
                     <a class="hero-primary" href="#periodic-table">Jelajahi tabel <span aria-hidden="true">→</span></a>
-                    <button class="hero-secondary" id="hero-quiz-button" type="button"><span aria-hidden="true">🎮</span> Coba kuis</button>
+                    <button class="hero-secondary" id="hero-quiz-button" type="button"><span aria-hidden="true">🎯</span> Coba latihan</button>
                 </div>
                 <div class="hero-highlights" aria-label="Tentang tabel periodik">
-                    <span><strong>118</strong> unsur untuk ditemukan</span>
-                    <span><strong>10</strong> keluarga berwarna</span>
-                    <span><strong>∞</strong> hal baru untuk dipelajari</span>
+                    <span><strong>118</strong> unsur lengkap</span>
+                    <span><strong>10</strong> kategori unsur</span>
+                    <span><strong>1</strong> peta konsep yang jelas</span>
                 </div>
             </div>
             <div class="hero-visual" aria-hidden="true">
@@ -108,6 +108,41 @@
                     <option value="gas-mulia">Gas Mulia (Nonlogam)</option>
                     <option value="lantanida">Lantanida</option>
                     <option value="aktinida">Aktinida</option>
+                </select>
+                <select id="filter-group">
+                    <option value="all">Semua Golongan</option>
+                    <option value="1">Golongan 1</option>
+                    <option value="2">Golongan 2</option>
+                    <option value="13">Golongan 13</option>
+                    <option value="14">Golongan 14</option>
+                    <option value="15">Golongan 15</option>
+                    <option value="16">Golongan 16</option>
+                    <option value="17">Golongan 17</option>
+                    <option value="18">Golongan 18</option>
+                    <option value="3">Golongan 3–12</option>
+                </select>
+                <select id="filter-period">
+                    <option value="all">Semua Periode</option>
+                    <option value="1">Periode 1</option>
+                    <option value="2">Periode 2</option>
+                    <option value="3">Periode 3</option>
+                    <option value="4">Periode 4</option>
+                    <option value="5">Periode 5</option>
+                    <option value="6">Periode 6</option>
+                    <option value="7">Periode 7</option>
+                </select>
+                <select id="filter-state">
+                    <option value="all">Semua Wujud</option>
+                    <option value="solid">Padat</option>
+                    <option value="liquid">Cair</option>
+                    <option value="gas">Gas</option>
+                </select>
+                <select id="filter-block">
+                    <option value="all">Semua Blok</option>
+                    <option value="s">Blok s</option>
+                    <option value="p">Blok p</option>
+                    <option value="d">Blok d</option>
+                    <option value="f">Blok f</option>
                 </select>
                 <button id="btn-show-fav" class="btn-secondary">⭐ Favorit (<span id="fav-count">0</span>)</button>
                 <button id="btn-toggle-heatmap" class="btn-secondary">🌡️ Mode Heatmap</button>

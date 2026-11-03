@@ -154,6 +154,19 @@ function playSound(type) {
     else if (type === 'wrong') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.2); gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2); osc.start(); osc.stop(audioCtx.currentTime + 0.2); }
 }
 
+function getElementBlock(atomNum) {
+    const sBlock = [1, 2, 3, 4, 11, 12, 19, 20, 37, 38, 55, 56, 87, 88];
+    const pBlock = [5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 31, 32, 33, 34, 35, 36, 49, 50, 51, 52, 53, 54, 81, 82, 83, 84, 85, 86, 113, 114, 115, 116, 117, 118];
+    const dBlock = [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 72, 73, 74, 75, 76, 77, 78, 79, 80, 104, 105, 106, 107, 108, 109, 110, 111, 112];
+    const fBlock = [57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103];
+
+    if (sBlock.includes(atomNum)) return "s";
+    if (pBlock.includes(atomNum)) return "p";
+    if (dBlock.includes(atomNum)) return "d";
+    if (fBlock.includes(atomNum)) return "f";
+    return "s";
+}
+
 function mapIUPACCoordinatesAndParse() {
     rawElementsArray.forEach(row => {
         const atomNum = row[0]; let p = Math.ceil(atomNum / 18); let g = atomNum % 18 === 0 ? 18 : atomNum % 18;
@@ -163,14 +176,14 @@ function mapIUPACCoordinatesAndParse() {
         if (atomNum >= 57 && atomNum <= 71) { p = 6; g = atomNum - 54; } if (atomNum >= 72 && atomNum <= 86) { p = 6; g = atomNum - 68; }
         if (atomNum >= 87 && atomNum <= 88) { p = 7; g = atomNum - 86; } if (atomNum >= 89 && atomNum <= 103) { p = 7; g = atomNum - 86; } if (atomNum >= 104 && atomNum <= 118) { p = 7; g = atomNum - 100; }
         let afn = p3TrendData[atomNum] ? p3TrendData[atomNum].afinitas : 0; let lgm = p3TrendData[atomNum] ? p3TrendData[atomNum].logam : 0;
-        elementsData.push({ num: atomNum, sym: row[1], name: row[2], weight: row[3], category: row[4], period: p, group: g, state: row[5], bohr: row[9], alias: row[10] || [], mnemonic: (atomNum === 11) ? "Nanti Kita Robohkan Candi Firaun" : "Belum ada", radius: row[6], ionisasi: row[7], elektronegatif: row[8], afinitas: afn, logam: lgm, orbital: hitungKonfigurasiOrbital(atomNum), kuantum: "Aturan Hund & Pauli", isotope: atomNum === 6 ? "C-12 (Stabil)" : "Isotop Alami", hazard: row[4] === "alkali" ? "Sangat reaktif!" : "Aman lab standar.", valency: row[9][row[9].length - 1], biloks: atomNum === 1 ? "+1, -1" : row[4] === "gas-mulia" ? "0" : `+${row[9][row[9].length - 1]}`, use: `Materi SMA`, fact: `Padat/Cair/Gas.` });
+        elementsData.push({ num: atomNum, sym: row[1], name: row[2], weight: row[3], category: row[4], period: p, group: g, block: getElementBlock(atomNum), state: row[5], bohr: row[9], alias: row[10] || [], mnemonic: (atomNum === 11) ? "Nanti Kita Robohkan Candi Firaun" : "Belum ada", radius: row[6], ionisasi: row[7], elektronegatif: row[8], afinitas: afn, logam: lgm, orbital: hitungKonfigurasiOrbital(atomNum), kuantum: "Aturan Hund & Pauli", isotope: atomNum === 6 ? "C-12 (Stabil)" : "Isotop Alami", hazard: row[4] === "alkali" ? "Sangat reaktif!" : "Aman lab standar.", valency: row[9][row[9].length - 1], biloks: atomNum === 1 ? "+1, -1" : row[4] === "gas-mulia" ? "0" : `+${row[9][row[9].length - 1]}`, use: `Materi SMA`, fact: `Padat/Cair/Gas.` });
     });
 }
 function hitungKonfigurasiOrbital(nomor) { const aufbau = [{n:"1s",m:2},{n:"2s",m:2},{n:"2p",m:6},{n:"3s",m:2},{n:"3p",m:6},{n:"4s",m:2},{n:"3d",m:10},{n:"4p",m:6},{n:"5s",m:2}]; let sisa = nomor; let hasil = []; for (let sub of aufbau) { if (sisa <= 0) break; let isi = Math.min(sisa, sub.m); hasil.push(`${sub.n}<sup>${isi}</sup>`); sisa -= isi; } return final = hasil.join(" "); }
 mapIUPACCoordinatesAndParse();
 
 let favorites = JSON.parse(localStorage.getItem("chem_favs")) || []; let personalNotes = JSON.parse(localStorage.getItem("chem_notes")) || {}; let quizActiveList = []; let quizCurrentIdx = 0; let quizScore = 0; let fcIdx = 0; let quizTimer;
-const mainGrid = document.getElementById("periodic-table-grid"); const fBlockGrid = document.getElementById("f-block-table"); const searchInput = document.getElementById("search-input"); const filterCat = document.getElementById("filter-category");
+const mainGrid = document.getElementById("periodic-table-grid"); const fBlockGrid = document.getElementById("f-block-table"); const searchInput = document.getElementById("search-input"); const filterCat = document.getElementById("filter-category"); const filterGroup = document.getElementById("filter-group"); const filterPeriod = document.getElementById("filter-period"); const filterState = document.getElementById("filter-state"); const filterBlock = document.getElementById("filter-block");
 
 function openModalObj(modalElement) { modalElement.classList.add("open"); document.body.classList.add("modal-open"); }
 function closeAllModals() { document.querySelectorAll(".modal").forEach(m => m.classList.remove("open")); document.body.classList.remove("modal-open"); }
@@ -260,11 +273,31 @@ function applyHeatmapEngine() {
 }
 
 function filterEngine() {
-    const q = searchInput.value.toLowerCase().trim(); const cat = filterCat.value; const isFavMode = document.getElementById("btn-show-fav").classList.contains("active");
+    const q = searchInput.value.toLowerCase().trim();
+    const cat = filterCat.value;
+    const group = filterGroup.value;
+    const period = filterPeriod.value;
+    const state = filterState.value;
+    const block = filterBlock.value;
+    const isFavMode = document.getElementById("btn-show-fav").classList.contains("active");
+
     document.querySelectorAll(".element-cell").forEach(cell => {
         const num = cell.getAttribute("data-num"); const el = elementsData.find(x => x.num == num); if (!el) return;
-        let matchesQ = !q || el.num.toString() === q || el.sym.toLowerCase().includes(q) || el.name.toLowerCase().includes(q); if (!matchesQ && el.alias && Array.isArray(el.alias)) matchesQ = el.alias.some(a => a.toLowerCase().includes(q));
-        const matchesC = cat === "all" || el.category === cat; const matchesF = !isFavMode || cell.classList.contains("is-fav"); cell.classList.toggle("dimmed", !(matchesQ && matchesC && matchesF));
+
+        let matchesQ = !q || el.num.toString() === q || el.sym.toLowerCase().includes(q) || el.name.toLowerCase().includes(q);
+        if (!matchesQ && el.alias && Array.isArray(el.alias)) matchesQ = el.alias.some(a => a.toLowerCase().includes(q));
+
+        const matchesC = cat === "all" || el.category === cat;
+        const matchesG = group === "all" || (group === "3" ? [3, 4, 5, 6, 7, 8, 9, 10, 11, 12].includes(el.group) : el.group.toString() === group);
+        const matchesP = period === "all" || el.period.toString() === period;
+        const matchesState = state === "all" ||
+            (state === "solid" && el.state === "S") ||
+            (state === "liquid" && el.state === "L") ||
+            (state === "gas" && el.state === "G");
+        const matchesBlock = block === "all" || el.block === block;
+        const matchesF = !isFavMode || cell.classList.contains("is-fav");
+
+        cell.classList.toggle("dimmed", !(matchesQ && matchesC && matchesG && matchesP && matchesState && matchesBlock && matchesF));
     });
 }
 
@@ -273,7 +306,11 @@ function setupCoreEvents() {
     const searchSugg = document.getElementById("search-suggestions");
     if(searchSugg) { searchInput.addEventListener("input", (e) => { const q = e.target.value.toLowerCase().trim(); searchSugg.innerHTML = ""; if(q.length > 0) { const matches = elementsData.filter(el => el.sym.toLowerCase().includes(q) || el.name.toLowerCase().includes(q) || el.num.toString() === q || el.alias.some(a=>a.toLowerCase().includes(q))).slice(0, 5); if(matches.length > 0) { searchSugg.classList.remove("hidden"); matches.forEach(m => { const div = document.createElement("div"); div.className = "suggestion-item"; div.innerHTML = `<strong>${m.sym}</strong> - ${m.name} (No. Atom: ${m.num})`; div.onclick = () => { searchInput.value = m.name; searchSugg.classList.add("hidden"); filterEngine(); playSound('click'); bukaModalUnsur(m.num); }; searchSugg.appendChild(div); }); } else { searchSugg.classList.add("hidden"); } } else { searchSugg.classList.add("hidden"); } filterEngine(); }); document.addEventListener("click", (e) => { if(!e.target.closest(".search-box")) searchSugg.classList.add("hidden"); }); }
     filterCat.addEventListener("change", () => { searchInput.value = ""; if(searchSugg) searchSugg.classList.add("hidden"); filterEngine(); playSound('click'); });
-    document.getElementById("btn-reset").addEventListener("click", () => { searchInput.value = ""; filterCat.value = "all"; isHeatmapActive = false; document.getElementById("btn-toggle-heatmap").classList.remove("active"); document.body.classList.remove("heatmap-active"); document.getElementById("btn-show-fav").classList.remove("active"); document.querySelectorAll(".sub-panel").forEach(p => p.classList.add("hidden-panel")); document.querySelectorAll(".btn-nav").forEach(b => b.classList.remove("active")); document.querySelectorAll(".element-cell").forEach(cell => { cell.classList.remove("dimmed"); cell.style.background = ""; }); document.getElementById("btn-zoom-reset").click(); playSound('click'); });
+    filterGroup.addEventListener("change", () => { searchInput.value = ""; if(searchSugg) searchSugg.classList.add("hidden"); filterEngine(); playSound('click'); });
+    filterPeriod.addEventListener("change", () => { searchInput.value = ""; if(searchSugg) searchSugg.classList.add("hidden"); filterEngine(); playSound('click'); });
+    filterState.addEventListener("change", () => { searchInput.value = ""; if(searchSugg) searchSugg.classList.add("hidden"); filterEngine(); playSound('click'); });
+    filterBlock.addEventListener("change", () => { searchInput.value = ""; if(searchSugg) searchSugg.classList.add("hidden"); filterEngine(); playSound('click'); });
+    document.getElementById("btn-reset").addEventListener("click", () => { searchInput.value = ""; filterCat.value = "all"; filterGroup.value = "all"; filterPeriod.value = "all"; filterState.value = "all"; filterBlock.value = "all"; isHeatmapActive = false; document.getElementById("btn-toggle-heatmap").classList.remove("active"); document.body.classList.remove("heatmap-active"); document.getElementById("btn-show-fav").classList.remove("active"); document.querySelectorAll(".sub-panel").forEach(p => p.classList.add("hidden-panel")); document.querySelectorAll(".btn-nav").forEach(b => b.classList.remove("active")); document.querySelectorAll(".element-cell").forEach(cell => { cell.classList.remove("dimmed"); cell.style.background = ""; }); document.getElementById("btn-zoom-reset").click(); playSound('click'); });
     document.getElementById("btn-show-fav").addEventListener("click", (e) => { e.target.classList.toggle("active"); filterEngine(); playSound('click'); });
     
     document.getElementById("btn-toggle-heatmap").addEventListener("click", (e) => { 
