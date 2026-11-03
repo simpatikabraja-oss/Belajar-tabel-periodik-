@@ -170,14 +170,14 @@ function hitungKonfigurasiOrbital(nomor) { const aufbau = [{n:"1s",m:2},{n:"2s",
 mapIUPACCoordinatesAndParse();
 
 let favorites = JSON.parse(localStorage.getItem("chem_favs")) || []; let personalNotes = JSON.parse(localStorage.getItem("chem_notes")) || {}; let quizActiveList = []; let quizCurrentIdx = 0; let quizScore = 0; let fcIdx = 0; let quizTimer;
-const mainGrid = document.getElementById("periodic-table"); const fBlockGrid = document.getElementById("f-block-table"); const searchInput = document.getElementById("search-input"); const filterCat = document.getElementById("filter-category");
+const mainGrid = document.getElementById("periodic-table-grid"); const fBlockGrid = document.getElementById("f-block-table"); const searchInput = document.getElementById("search-input"); const filterCat = document.getElementById("filter-category");
 
 function openModalObj(modalElement) { modalElement.classList.add("open"); document.body.classList.add("modal-open"); }
 function closeAllModals() { document.querySelectorAll(".modal").forEach(m => m.classList.remove("open")); document.body.classList.remove("modal-open"); }
 
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("loader").classList.add("fade-out"); updateGamificationUI(true); 
-    renderGrid(); setupCoreEvents(); updateFavButtonDisplay(); renderChart("radius"); setupComparisonEngine(); inisialisasiKalkulatorKimia(); aktifkanShortcutKeyboard(); setupVirtualLab(); setupBackupSystem();
+    renderGrid(); setupCoreEvents(); updateFavButtonDisplay(); renderChart("radius"); setupComparisonEngine(); setupScientificCalculator(); setupQuestionBank(); aktifkanShortcutKeyboard(); setupVirtualLab(); setupBackupSystem();
     setupZoomControls();
 });
 
@@ -195,8 +195,13 @@ function applyTableZoom() {
     if (currentTableZoom > 1.5) currentTableZoom = 1.5;
 
     wrapper.style.transform = `scale(${currentTableZoom})`;
-    const baseHeight = 720; 
-    container.style.height = `${(baseHeight * currentTableZoom) + 20}px`;
+    const zoomControls = container.querySelector(".zoom-controls");
+    const containerStyle = getComputedStyle(container);
+    const controlsStyle = getComputedStyle(zoomControls);
+    const verticalPadding = parseFloat(containerStyle.paddingTop) + parseFloat(containerStyle.paddingBottom);
+    const controlsMargin = parseFloat(controlsStyle.marginBottom);
+    const contentHeight = zoomControls.offsetHeight + controlsMargin + (wrapper.offsetHeight * currentTableZoom);
+    container.style.height = `${contentHeight + verticalPadding + 2}px`;
 
     // MATIKAN SCROLL JIKA PAS DI LAYAR, HIDUPKAN JIKA DI-ZOOM BESAR
     if (currentTableZoom <= minZoomAllowed + 0.02) {
@@ -208,9 +213,11 @@ function applyTableZoom() {
 
 function setupZoomControls() {
     const hitungBatasMinZoom = () => {
-        const containerWidth = document.querySelector('.table-outer-container').clientWidth;
-        const tableWidth = 1260; 
-        minZoomAllowed = containerWidth / tableWidth;
+        const container = document.querySelector('.table-outer-container');
+        const containerStyle = getComputedStyle(container);
+        const availableWidth = container.clientWidth - parseFloat(containerStyle.paddingLeft) - parseFloat(containerStyle.paddingRight);
+        const tableWidth = document.querySelector('.table-wrapper').offsetWidth;
+        minZoomAllowed = window.matchMedia("(max-width: 700px)").matches ? 1 : availableWidth / tableWidth;
         if(minZoomAllowed > 1) minZoomAllowed = 1; 
     };
 
@@ -282,9 +289,14 @@ function setupCoreEvents() {
     document.getElementById("btn-mode-belajar").addEventListener("click", (e) => toggleSubPanel(document.getElementById("panel-belajar"), e.target));
     document.getElementById("btn-mode-kuis").addEventListener("click", (e) => toggleSubPanel(document.getElementById("panel-kuis"), e.target));
     document.getElementById("btn-mode-tren").addEventListener("click", (e) => toggleSubPanel(document.getElementById("panel-tren"), e.target));
+    document.getElementById("btn-mode-soal").addEventListener("click", (e) => toggleSubPanel(document.getElementById("panel-soal"), e.target));
     document.getElementById("btn-mode-kalkulator").addEventListener("click", (e) => toggleSubPanel(document.getElementById("panel-kalkulator"), e.target));
     document.getElementById("btn-mode-lab").addEventListener("click", (e) => toggleSubPanel(document.getElementById("panel-lab"), e.target));
     document.getElementById("btn-mode-ujian").addEventListener("click", (e) => toggleSubPanel(document.getElementById("panel-ujian"), e.target));
+    document.getElementById("hero-quiz-button").addEventListener("click", () => {
+        document.getElementById("btn-mode-kuis").click();
+        document.getElementById("panel-kuis").scrollIntoView({ behavior: "smooth", block: "center" });
+    });
 
     document.getElementById("hide-name").addEventListener("change", (e) => mainGrid.classList.toggle("hide-names-active", e.target.checked));
     document.getElementById("hide-symbol").addEventListener("change", (e) => mainGrid.classList.toggle("hide-symbols-active", e.target.checked));
@@ -366,11 +378,188 @@ function setupComparisonEngine() {
     sel1.onchange = renderComp; sel2.onchange = renderComp;
 }
 
-function inisialisasiKalkulatorKimia() {
-    const elSelect = document.getElementById("calc-element-select"); const valInput = document.getElementById("calc-value"); const typeSelect = document.getElementById("calc-type"); const outputBox = document.getElementById("calc-output");
-    if (!elSelect) return; let options = ""; elementsData.forEach(e => options += `<option value="${e.weight}">${e.name} (Ar: ${e.weight})</option>`); elSelect.innerHTML = options;
-    const hitungMol = () => { const ar = parseFloat(elSelect.value); const nilai = parseFloat(valInput.value); const tipe = typeSelect.value; if (isNaN(nilai) || nilai <= 0) { outputBox.innerHTML = "<p>Masukkan angka valid.</p>"; return; } let mol = 0, gram = 0, vol = 0; if (tipe === "massa") { gram = nilai; mol = gram / ar; vol = mol * 22.4; } else if (tipe === "mol") { mol = nilai; gram = mol * ar; vol = mol * 22.4; } else { vol = nilai; mol = vol / 22.4; gram = mol * ar; } outputBox.innerHTML = `<strong>🧪 Hasil Analisis:</strong><p>• Mol: ${mol.toFixed(4)} mol</p><p>• Massa: ${gram.toFixed(2)} gram</p><p>• Volume Gas (STP): ${vol.toFixed(2)} L</p>`; };
-    valInput.oninput = hitungMol; elSelect.onchange = hitungMol; typeSelect.onchange = hitungMol;
+function evaluateScientificExpression(expression, angleMode) {
+    if (typeof expression !== "string" || !expression.trim()) throw new Error("Masukkan perhitungan terlebih dahulu.");
+    if (expression.length > 256) throw new Error("Ekspresi terlalu panjang (maksimal 256 karakter).");
+    if (!["DEG", "RAD"].includes(angleMode)) throw new Error("Pilih mode sudut DEG atau RAD.");
+    if (expression.includes(",") && expression.includes(".")) throw new Error("Gunakan titik atau koma sebagai pemisah desimal, jangan keduanya.");
+    const source = expression.replace(/,/g, ".").replace(/[×·]/g, "*").replace(/[÷]/g, "/").replace(/[−–]/g, "-").replace(/π/g, "pi").replace(/√/g, "sqrt");
+    const tokens = [];
+    let remaining = source.replace(/\s+/g, "");
+    const numberPattern = /^(?:(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)/;
+    const identifiers = new Set(["sin", "cos", "tan", "sqrt", "log", "ln", "pi", "e"]);
+    while (remaining.length > 0) {
+        const number = remaining.match(numberPattern);
+        if (number) {
+            tokens.push(number[0]);
+            remaining = remaining.slice(number[0].length);
+            continue;
+        }
+        const identifier = remaining.match(/^[a-z]+/i);
+        if (identifier) {
+            const name = identifier[0].toLowerCase();
+            if (!identifiers.has(name)) throw new Error(`Fungsi atau simbol "${identifier[0]}" belum didukung.`);
+            tokens.push(name);
+            remaining = remaining.slice(identifier[0].length);
+            continue;
+        }
+        const operator = remaining[0];
+        if (!"()+-*/^".includes(operator)) throw new Error(`Karakter "${operator}" tidak dikenali.`);
+        tokens.push(operator);
+        remaining = remaining.slice(1);
+        if (tokens.length > 128) throw new Error("Perhitungan terlalu panjang.");
+    }
+    if (tokens.length > 128) throw new Error("Perhitungan terlalu panjang.");
+    const isNumber = token => /^(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/.test(token);
+    for (let index = 1; index < tokens.length; index++) {
+        const previous = tokens[index - 1];
+        const current = tokens[index];
+        const previousEndsValue = previous === ")" || previous === "pi" || previous === "e" || isNumber(previous);
+        const currentStartsValue = current === "(" || current === "pi" || current === "e" ||
+            ["sin", "cos", "tan", "sqrt", "log", "ln"].includes(current) || isNumber(current);
+        if (previousEndsValue && currentStartsValue && !(isNumber(previous) && isNumber(current))) {
+            tokens.splice(index, 0, "*");
+            index++;
+        }
+    }
+    if (tokens.length > 128) throw new Error("Perhitungan terlalu panjang.");
+    let position = 0;
+    const peek = () => tokens[position];
+    const take = () => tokens[position++];
+    const requireFinite = value => {
+        if (!Number.isFinite(value)) throw new Error("Hasil tidak terdefinisi.");
+        return value;
+    };
+    const parsePrimary = () => {
+        const token = take();
+        if (!token) throw new Error("Ekspresi belum lengkap.");
+        const normalized = token.toLowerCase();
+        if (normalized === "(") {
+            const value = parseExpression();
+            if (take() !== ")") throw new Error("Tanda kurung belum lengkap.");
+            return value;
+        }
+        if (normalized === "pi") return Math.PI;
+        if (normalized === "e") return Math.E;
+        if (isNumber(token)) return requireFinite(Number(token));
+        if (["sin", "cos", "tan", "sqrt", "log", "ln"].includes(normalized)) {
+            if (normalized === "sqrt" && peek() !== "(") {
+                const radicand = parseUnary();
+                if (radicand < 0) throw new Error("Akar kuadrat bilangan negatif tidak real.");
+                return requireFinite(Math.sqrt(radicand));
+            }
+            if (take() !== "(") throw new Error(`Gunakan ${normalized}(angka).`);
+            const argument = parseExpression();
+            if (take() !== ")") throw new Error("Tanda kurung belum lengkap.");
+            if (normalized === "sqrt") {
+                if (argument < 0) throw new Error("Akar kuadrat bilangan negatif tidak real.");
+                return requireFinite(Math.sqrt(argument));
+            }
+            if (normalized === "log" || normalized === "ln") {
+                if (argument <= 0) throw new Error("Logaritma hanya berlaku untuk angka positif.");
+                return requireFinite(normalized === "log" ? Math.log10(argument) : Math.log(argument));
+            }
+            const radians = angleMode === "DEG" ? argument * Math.PI / 180 : argument;
+            const trigValue = Math[normalized](radians);
+            if (normalized === "tan" && Math.abs(Math.cos(radians)) < Number.EPSILON * 4) throw new Error("Tangen tidak terdefinisi pada sudut ini.");
+            return Math.abs(trigValue) < 1e-14 ? 0 : requireFinite(trigValue);
+        }
+        throw new Error("Ada bagian ekspresi yang tidak dikenali.");
+    };
+    const parsePower = () => {
+        const base = parsePrimary();
+        if (peek() === "^") {
+            take();
+            return requireFinite(base ** parseUnary());
+        }
+        return base;
+    };
+    const parseUnary = () => {
+        if (peek() === "+") {
+            take();
+            return parseUnary();
+        }
+        if (peek() === "-") {
+            take();
+            return -parseUnary();
+        }
+        return parsePower();
+    };
+    const parseTerm = () => {
+        let value = parseUnary();
+        while (peek() === "*" || peek() === "/") {
+            const operator = take();
+            const right = parseUnary();
+            if (operator === "/" && right === 0) throw new Error("Tidak bisa membagi dengan nol.");
+            value = requireFinite(operator === "*" ? value * right : value / right);
+        }
+        return value;
+    };
+    const parseExpression = () => {
+        let value = parseTerm();
+        while (peek() === "+" || peek() === "-") {
+            const operator = take();
+            const right = parseTerm();
+            value = requireFinite(operator === "+" ? value + right : value - right);
+        }
+        return value;
+    };
+    const result = parseExpression();
+    if (position !== tokens.length) throw new Error("Periksa operator atau tanda kurung.");
+    return requireFinite(result);
+}
+
+function setupScientificCalculator() {
+    const expression = document.getElementById("calculator-expression");
+    const result = document.getElementById("calculator-result");
+    const keys = document.getElementById("calculator-keys");
+    if (!expression || !result || !keys) return;
+    let angleMode = "DEG";
+    const calculate = () => {
+        try {
+            const answer = evaluateScientificExpression(expression.value, angleMode);
+            result.value = Number(answer.toPrecision(12)).toString();
+            result.textContent = result.value;
+            result.classList.remove("calculator-error");
+        } catch (error) {
+            result.value = error.message;
+            result.textContent = error.message;
+            result.classList.add("calculator-error");
+        }
+    };
+    keys.addEventListener("click", event => {
+        const button = event.target.closest("button");
+        if (!button) return;
+        const action = button.dataset.action;
+        if (action === "angle") {
+            angleMode = angleMode === "DEG" ? "RAD" : "DEG";
+            button.textContent = angleMode;
+        } else if (action === "clear") {
+            expression.value = "";
+            result.value = "0";
+            result.textContent = "0";
+            result.classList.remove("calculator-error");
+        } else if (action === "backspace") {
+            expression.value = expression.value.slice(0, -1);
+        } else if (action === "calculate") {
+            calculate();
+            return;
+        } else if (button.dataset.value) {
+            expression.value += button.dataset.value;
+        }
+        expression.focus();
+    });
+    expression.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === "=") {
+            event.preventDefault();
+            calculate();
+        } else if (event.key === "Escape") {
+            expression.value = "";
+            result.value = "0";
+            result.textContent = "0";
+            result.classList.remove("calculator-error");
+        }
+    });
 }
 
 function setupVirtualLab() {
@@ -401,9 +590,113 @@ function setupBackupSystem() {
     document.getElementById("btn-load-save").addEventListener("click", () => { try { const decoded = JSON.parse(atob(codeInput.value.trim())); if(decoded.chem_xp !== undefined) localStorage.setItem("chem_xp", decoded.chem_xp); showToast("Progress Berhasil Dimuat!", "lvl-up-toast"); setTimeout(() => location.reload(), 1200); } catch { showToast("Kode rusak/salah!", ""); playSound('wrong'); } });
 }
 
-function startQuizEngine() { document.getElementById("quiz-start-box").classList.add("hidden-panel"); document.getElementById("quiz-play-box").classList.remove("hidden-panel"); quizScore = 0; quizCurrentIdx = 0; quizActiveList = [...elementsData].sort(() => 0.5 - Math.random()).slice(0, 10); loadQuizQuestion(); }
-function loadQuizQuestion() { clearInterval(quizTimer); if (quizCurrentIdx >= 10) { document.getElementById("quiz-question-text").innerText = `Kuis Selesai! Skor Akhir: ${quizScore * 10}`; document.getElementById("quiz-options").innerHTML = `<button class="btn-primary" onclick="startQuizEngine()">Ulangi Kuis</button>`; return; } document.getElementById("quiz-question-num").innerText = `Soal ${quizCurrentIdx + 1}/10`; document.getElementById("quiz-score").innerText = `Skor: ${quizScore}`; let sisaWaktu = 20; document.getElementById("timer-count").innerText = sisaWaktu; quizTimer = setInterval(() => { sisaWaktu--; document.getElementById("timer-count").innerText = sisaWaktu; if(sisaWaktu <= 0) { quizCurrentIdx++; loadQuizQuestion(); } }, 1000); const target = quizActiveList[quizCurrentIdx]; document.getElementById("quiz-question-text").innerText = `Apa nama unsur dari lambang "${target.sym}"?`; let options = [target.name]; while(options.length<4) { let n = elementsData[Math.floor(Math.random()*118)].name; if(!options.includes(n)) options.push(n); } options.sort(() => 0.5 - Math.random()); const optGrid = document.getElementById("quiz-options"); optGrid.innerHTML = ""; options.forEach(opt => { const btn = document.createElement("button"); btn.className = "quiz-opt"; btn.innerText = opt; btn.onclick = () => { if(opt === target.name) { quizScore++; playSound('correct'); addXP(10, "Benar"); } else { playSound('wrong'); } quizCurrentIdx++; loadQuizQuestion(); }; optGrid.appendChild(btn); }); }
-function renderChart(prop) { const chartContainer = document.getElementById("custom-bar-chart"); chartContainer.innerHTML = ""; const p3 = elementsData.filter(e => e.period === 3).sort((a,b)=>a.num - b.num); const max = { radius: 220, logam: 100, ionisasi: 1600, elektronegatif: 4.0, afinitas: 400 }; const colors = { radius: "linear-gradient(to top, #3b82f6, #06b6d4)", logam: "linear-gradient(to top, #64748b, #cbd5e1)", ionisasi: "linear-gradient(to top, #ef4444, #f97316)", elektronegatif: "linear-gradient(to top, #8b5cf6, #d946ef)", afinitas: "linear-gradient(to top, #10b981, #34d399)" }; p3.forEach(el => { const val = el[prop]; const pct = Math.min((val / max[prop]) * 100, 100); const bar = document.createElement("div"); bar.className = "chart-bar-item"; bar.innerHTML = `<div class="bar-fill" style="height: ${pct}%; background: ${colors[prop]};"><span class="bar-val">${val}</span></div><span class="bar-label">${el.sym}</span>`; chartContainer.appendChild(bar); }); }
+function createElementQuizQuestion(element) {
+    const options = [element.name];
+    while (options.length < 4) {
+        const name = elementsData[Math.floor(Math.random() * elementsData.length)].name;
+        if (!options.includes(name)) options.push(name);
+    }
+    options.sort(() => Math.random() - 0.5);
+    return { q: `Apa nama unsur dengan lambang "${element.sym}"?`, options, ans: options.indexOf(element.name), exp: `${element.sym} adalah lambang untuk unsur ${element.name}.` };
+}
+
+function startQuizEngine() {
+    document.getElementById("quiz-start-box").classList.add("hidden-panel");
+    document.getElementById("quiz-play-box").classList.remove("hidden-panel");
+    quizScore = 0;
+    quizCurrentIdx = 0;
+    const customPool = [...customQuestions].sort(() => Math.random() - 0.5).slice(0, 10);
+    const elementPool = elementsData.map(createElementQuizQuestion).sort(() => Math.random() - 0.5);
+    quizActiveList = [...customPool, ...elementPool.slice(0, 10 - customPool.length)].sort(() => Math.random() - 0.5);
+    loadQuizQuestion();
+}
+
+function loadQuizQuestion() {
+    clearInterval(quizTimer);
+    if (quizCurrentIdx >= quizActiveList.length) {
+        document.getElementById("quiz-question-text").innerText = `Kuis Selesai! Skor Akhir: ${quizScore * 10}`;
+        document.getElementById("quiz-options").innerHTML = `<button class="btn-primary" onclick="startQuizEngine()">Ulangi Kuis</button>`;
+        return;
+    }
+    document.getElementById("quiz-question-num").innerText = `Soal ${quizCurrentIdx + 1}/${quizActiveList.length}`;
+    document.getElementById("quiz-score").innerText = `Skor: ${quizScore}`;
+    let secondsLeft = 20;
+    document.getElementById("timer-count").innerText = secondsLeft;
+    quizTimer = setInterval(() => {
+        secondsLeft--;
+        document.getElementById("timer-count").innerText = secondsLeft;
+        if (secondsLeft <= 0) {
+            quizCurrentIdx++;
+            loadQuizQuestion();
+        }
+    }, 1000);
+    const question = quizActiveList[quizCurrentIdx];
+    document.getElementById("quiz-question-text").innerText = question.q;
+    const optionsGrid = document.getElementById("quiz-options");
+    optionsGrid.innerHTML = "";
+    question.options.forEach((option, index) => {
+        const button = document.createElement("button");
+        button.className = "quiz-opt";
+        button.innerText = option;
+        button.onclick = () => {
+            if (index === question.ans) {
+                quizScore++;
+                playSound("correct");
+                addXP(10, "Benar");
+            } else {
+                playSound("wrong");
+            }
+            quizCurrentIdx++;
+            loadQuizQuestion();
+        };
+        optionsGrid.appendChild(button);
+    });
+}
+
+function renderChart(prop) {
+    const chart = document.getElementById("custom-bar-chart");
+    chart.replaceChildren();
+    const data = elementsData.filter(element => element.period === 3).sort((a, b) => a.num - b.num);
+    const maxValues = { radius: 220, logam: 100, ionisasi: 1600, elektronegatif: 4, afinitas: 400 };
+    const width = 760;
+    const height = 300;
+    const padding = { top: 26, right: 24, bottom: 42, left: 52 };
+    const plotWidth = width - padding.left - padding.right;
+    const plotHeight = height - padding.top - padding.bottom;
+    const maxValue = maxValues[prop];
+    const makeSvgElement = (name, attributes) => {
+        const node = document.createElementNS("http://www.w3.org/2000/svg", name);
+        Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, value));
+        return node;
+    };
+    const svg = makeSvgElement("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": `Grafik garis ${trendExplanations[prop].title} periode 3` });
+    const title = makeSvgElement("title", {});
+    title.textContent = `Tren ${trendExplanations[prop].title} periode 3`;
+    svg.appendChild(title);
+    for (let row = 0; row <= 4; row++) {
+        const y = padding.top + plotHeight * row / 4;
+        const line = makeSvgElement("line", { x1: padding.left, y1: y, x2: width - padding.right, y2: y, class: "trend-gridline" });
+        const label = makeSvgElement("text", { x: padding.left - 10, y: y + 4, class: "trend-axis-label", "text-anchor": "end" });
+        label.textContent = Number((maxValue * (1 - row / 4)).toPrecision(3)).toString();
+        svg.append(line, label);
+    }
+    const points = data.map((element, index) => {
+        const value = Number(element[prop]) || 0;
+        return { element, value, x: padding.left + plotWidth * index / (data.length - 1), y: padding.top + plotHeight * (1 - value / maxValue) };
+    });
+    const line = makeSvgElement("polyline", { points: points.map(point => `${point.x},${point.y}`).join(" "), class: "trend-line" });
+    svg.appendChild(line);
+    points.forEach(point => {
+        const dot = makeSvgElement("circle", { cx: point.x, cy: point.y, r: 5, class: "trend-point" });
+        const tooltip = makeSvgElement("title", {});
+        tooltip.textContent = `${point.element.name}: ${point.value}`;
+        dot.appendChild(tooltip);
+        const label = makeSvgElement("text", { x: point.x, y: height - padding.bottom + 23, class: "trend-element-label", "text-anchor": "middle" });
+        label.textContent = point.element.sym;
+        svg.append(dot, label);
+    });
+    chart.appendChild(svg);
+}
 function setupFlashcardEngine() { document.getElementById("btn-flashcard").onclick = () => { openModalObj(document.getElementById("flashcard-modal")); showCard(); }; document.getElementById("flashcard-box").onclick = () => { document.getElementById("flashcard-box").classList.toggle("flipped"); }; document.getElementById("fc-next").onclick = () => { fcIdx = (fcIdx + 1) % 118; showCard(); }; document.getElementById("fc-prev").onclick = () => { fcIdx = (fcIdx - 1 + 118) % 118; showCard(); }; }
 function showCard() { document.getElementById("flashcard-box").classList.remove("flipped"); const el = elementsData[fcIdx]; document.getElementById("fc-symbol").innerText = el.sym; document.getElementById("fc-num").innerText = el.num; document.getElementById("fc-name").innerText = el.name; document.getElementById("fc-desc").innerText = el.category.toUpperCase(); }
 function aktifkanShortcutKeyboard() { window.addEventListener("keydown", e => { if (e.key === "/") { e.preventDefault(); searchInput.focus(); } if (e.key === "Escape") closeAllModals(); }); }
@@ -464,29 +757,211 @@ const examDatabase = [
     { q: "Bahan penyangga (buffer) bekerja mempertahankan kestabilan pH sistem dari gangguan pengaruh...", options: ["Penambahan sedikit senyawa asam atau sedikit senyawa basa kuat", "Pemanasan suhu tinggi ekstrim", "Pengocokan mekanik bejana larutan", "Penambahan air dalam jumlah galon besar"], ans: 0, exp: "Buffer mengandung pasangan asam-basa konjugasi yang dapat menetralisir kelebihan ion H+ atau ion OH-." }
 ];
 
-let currentExamIdx = 0; let userAnswers = new Array(examDatabase.length).fill(null); let examTimerInterval;
+let customQuestions = [];
+let currentExamQuestions = examDatabase;
+let currentExamIdx = 0;
+let userAnswers = [];
+let examTimerInterval;
+
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[character]);
+}
+
+function normalizeCustomQuestion(question) {
+    if (!question || typeof question !== "object" || typeof question.q !== "string" || !Array.isArray(question.options)) return null;
+    const q = question.q.trim();
+    const options = question.options.map(option => typeof option === "string" ? option.trim() : "");
+    const exp = typeof question.exp === "string" ? question.exp.trim() : "";
+    if (!q || q.length > 500 || options.length !== 4 || options.some(option => !option || option.length > 180)) return null;
+    if (new Set(options.map(option => option.toLocaleLowerCase())).size !== 4) return null;
+    if (!Number.isInteger(question.ans) || question.ans < 0 || question.ans > 3 || !exp || exp.length > 600) return null;
+    return { q, options, ans: question.ans, exp };
+}
+
+function loadCustomQuestions() {
+    try {
+        const stored = localStorage.getItem("chem_custom_questions");
+        if (!stored) return [];
+        const parsed = JSON.parse(stored);
+        if (!Array.isArray(parsed)) throw new Error("Format soal tersimpan tidak sesuai.");
+        const normalized = parsed.map(normalizeCustomQuestion);
+        if (normalized.some(question => !question)) throw new Error("Ada soal tersimpan dengan format tidak valid.");
+        return normalized;
+    } catch (error) {
+        showToast(`Soal tersimpan tidak dapat dibaca: ${error.message}`, "");
+        return [];
+    }
+}
+
+function saveCustomQuestions() {
+    try {
+        localStorage.setItem("chem_custom_questions", JSON.stringify(customQuestions));
+        return true;
+    } catch (error) {
+        showToast(`Soal tidak dapat disimpan: ${error.message}`, "");
+        return false;
+    }
+}
+
+function renderCustomQuestions() {
+    const list = document.getElementById("custom-question-list");
+    document.getElementById("custom-question-count").textContent = customQuestions.length;
+    list.replaceChildren();
+    if (customQuestions.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "question-empty";
+        empty.textContent = "Belum ada soal buatanmu. Tambahkan soal pertama lewat formulir di atas.";
+        list.appendChild(empty);
+        return;
+    }
+    customQuestions.forEach((question, index) => {
+        const item = document.createElement("article");
+        item.className = "custom-question-item";
+        const text = document.createElement("p");
+        text.textContent = `${index + 1}. ${question.q}`;
+        const details = document.createElement("small");
+        details.textContent = `Jawaban: ${question.options[question.ans]}`;
+        const remove = document.createElement("button");
+        remove.className = "btn-secondary btn-sm";
+        remove.type = "button";
+        remove.textContent = "Hapus";
+        remove.setAttribute("aria-label", `Hapus soal ${index + 1}`);
+        remove.addEventListener("click", () => {
+            const previous = customQuestions;
+            customQuestions = customQuestions.filter((_, questionIndex) => questionIndex !== index);
+            if (!saveCustomQuestions()) {
+                customQuestions = previous;
+                return;
+            }
+            renderCustomQuestions();
+        });
+        item.append(text, details, remove);
+        list.appendChild(item);
+    });
+}
+
+function setupQuestionBank() {
+    const form = document.getElementById("custom-question-form");
+    const fileInput = document.getElementById("import-questions-file");
+    customQuestions = loadCustomQuestions();
+    renderCustomQuestions();
+    form.addEventListener("submit", event => {
+        event.preventDefault();
+        const question = normalizeCustomQuestion({
+            q: document.getElementById("custom-question-text").value,
+            options: [
+                document.getElementById("custom-option-a").value,
+                document.getElementById("custom-option-b").value,
+                document.getElementById("custom-option-c").value,
+                document.getElementById("custom-option-d").value
+            ],
+            ans: Number(document.getElementById("custom-question-answer").value),
+            exp: document.getElementById("custom-question-explanation").value
+        });
+        if (!question) {
+            showToast("Lengkapi soal, empat jawaban yang berbeda, dan pembahasannya.", "");
+            return;
+        }
+        const key = item => `${item.q.toLocaleLowerCase()}|${item.options.map(option => option.toLocaleLowerCase()).join("|")}`;
+        if (customQuestions.some(existing => key(existing) === key(question))) {
+            showToast("Soal yang sama sudah ada.", "");
+            return;
+        }
+        customQuestions.push(question);
+        if (!saveCustomQuestions()) {
+            customQuestions.pop();
+            return;
+        }
+        form.reset();
+        renderCustomQuestions();
+        showToast("Soal berhasil disimpan dan siap dimainkan!", "lvl-up-toast");
+    });
+    document.getElementById("btn-export-questions").addEventListener("click", () => {
+        const file = new Blob([JSON.stringify({ version: 1, questions: customQuestions }, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(file);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "soal-chemlab-quest.json";
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+    fileInput.addEventListener("change", () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                const imported = JSON.parse(String(reader.result));
+                const entries = Array.isArray(imported) ? imported : imported && imported.questions;
+                if (!Array.isArray(entries)) throw new Error("File harus berisi daftar soal JSON.");
+                const normalized = entries.map(normalizeCustomQuestion);
+                if (normalized.some(question => !question)) throw new Error("Ada soal tidak valid. Impor dibatalkan.");
+                const merged = [...customQuestions];
+                normalized.forEach(question => {
+                    const isDuplicate = merged.some(existing =>
+                        existing.q.toLocaleLowerCase() === question.q.toLocaleLowerCase() &&
+                        existing.options.every((option, index) => option.toLocaleLowerCase() === question.options[index].toLocaleLowerCase())
+                    );
+                    if (!isDuplicate) merged.push(question);
+                });
+                const previous = customQuestions;
+                customQuestions = merged;
+                if (!saveCustomQuestions()) {
+                    customQuestions = previous;
+                    return;
+                }
+                renderCustomQuestions();
+                showToast(`${merged.length - previous.length} soal baru berhasil diimpor.`, "lvl-up-toast");
+            } catch (error) {
+                showToast(`Impor gagal: ${error.message}`, "");
+            } finally {
+                fileInput.value = "";
+            }
+        };
+        reader.onerror = () => {
+            showToast("File soal tidak dapat dibaca.", "");
+            fileInput.value = "";
+        };
+        reader.readAsText(file);
+    });
+}
+
 function startExamEngine() {
     document.getElementById("exam-start-box").classList.add("hidden-panel"); document.getElementById("exam-result-box").classList.add("hidden-panel"); document.getElementById("exam-play-box").classList.remove("hidden-panel");
-    currentExamIdx = 0; userAnswers.fill(null); let timeLeft = 3600; clearInterval(examTimerInterval);
+    currentExamQuestions = [...examDatabase, ...customQuestions];
+    currentExamIdx = 0; userAnswers = new Array(currentExamQuestions.length).fill(null); let timeLeft = 3600; clearInterval(examTimerInterval);
     examTimerInterval = setInterval(() => { timeLeft--; let m = Math.floor(timeLeft / 60).toString().padStart(2, '0'); let s = (timeLeft % 60).toString().padStart(2, '0'); document.getElementById("exam-time-text").innerText = `${m}:${s}`; if (timeLeft <= 0) { clearInterval(examTimerInterval); finishExam(); } }, 1000);
     renderExamQuestion();
 }
 function renderExamQuestion() {
-    const data = examDatabase[currentExamIdx]; document.getElementById("exam-progress").innerText = `Soal Ujian ${currentExamIdx + 1}/${examDatabase.length}`; document.getElementById("exam-question-text").innerText = data.q;
+    const data = currentExamQuestions[currentExamIdx]; document.getElementById("exam-progress").innerText = `Soal Ujian ${currentExamIdx + 1}/${currentExamQuestions.length}`; document.getElementById("exam-question-text").innerText = data.q;
     const optsBox = document.getElementById("exam-options"); optsBox.innerHTML = ""; const labels = ["A", "B", "C", "D"];
-    data.options.forEach((optText, i) => { const btn = document.createElement("div"); btn.className = "exam-opt"; if (userAnswers[currentExamIdx] === i) btn.classList.add("selected"); btn.innerHTML = `<span class="exam-opt-letter">${labels[i]}</span> ${optText}`; btn.onclick = () => { userAnswers[currentExamIdx] = i; renderExamQuestion(); playSound('click'); }; optsBox.appendChild(btn); });
+    data.options.forEach((optText, i) => { const btn = document.createElement("div"); btn.className = "exam-opt"; if (userAnswers[currentExamIdx] === i) btn.classList.add("selected"); btn.innerHTML = `<span class="exam-opt-letter">${labels[i]}</span> ${escapeHtml(optText)}`; btn.onclick = () => { userAnswers[currentExamIdx] = i; renderExamQuestion(); playSound('click'); }; optsBox.appendChild(btn); });
     document.getElementById("btn-exam-prev").disabled = (currentExamIdx === 0);
-    const nextBtn = document.getElementById("btn-exam-next"); if (currentExamIdx === examDatabase.length - 1) { nextBtn.innerText = "Selesai & Kumpulkan"; nextBtn.style.background = "#ef4444"; } else { nextBtn.innerText = "Selanjutnya ▶"; nextBtn.style.background = "#3b82f6"; }
+    const nextBtn = document.getElementById("btn-exam-next"); if (currentExamIdx === currentExamQuestions.length - 1) { nextBtn.innerText = "Selesai & Kumpulkan"; nextBtn.style.background = "#ef4444"; } else { nextBtn.innerText = "Selanjutnya ▶"; nextBtn.style.background = "#3b82f6"; }
 }
 document.getElementById("btn-exam-prev").onclick = () => { if (currentExamIdx > 0) { currentExamIdx--; renderExamQuestion(); playSound('click'); } };
-document.getElementById("btn-exam-next").onclick = () => { if (currentExamIdx < examDatabase.length - 1) { currentExamIdx++; renderExamQuestion(); playSound('click'); } else { finishExam(); } };
+document.getElementById("btn-exam-next").onclick = () => { if (currentExamIdx < currentExamQuestions.length - 1) { currentExamIdx++; renderExamQuestion(); playSound('click'); } else { finishExam(); } };
 function finishExam() {
     clearInterval(examTimerInterval); document.getElementById("exam-play-box").classList.add("hidden-panel"); document.getElementById("exam-result-box").classList.remove("hidden-panel"); playSound('correct');
     let score = 0; const reviewBox = document.getElementById("exam-review-container"); reviewBox.innerHTML = "";
-    examDatabase.forEach((q, i) => { 
-        const isCorrect = userAnswers[i] === q.ans; if (isCorrect) score += 2; 
-        const item = document.createElement("div"); item.className = `review-item ${isCorrect ? 'correct-ans' : 'wrong-ans'}`; const labels = ["A", "B", "C", "D"]; const userAnsText = userAnswers[i] !== null ? q.options[userAnswers[i]] : "Tidak Dijawab"; const correctAnsText = q.options[q.ans]; item.innerHTML = `<div class="review-q">${i+1}. ${q.q}</div><div class="review-a">Jawabanmu: <strong style="color:${isCorrect?'#10b981':'#ef4444'}">${userAnsText}</strong></div>${!isCorrect ? `<div class="review-a">Kunci: <strong>${correctAnsText}</strong></div>` : ''}<div class="review-exp"><strong>📚 Pembahasan Analisis:</strong> ${q.exp}</div>`; reviewBox.appendChild(item); 
+    currentExamQuestions.forEach((q, i) => {
+        const isCorrect = userAnswers[i] === q.ans;
+        if (isCorrect) score++;
+        const item = document.createElement("div");
+        item.className = `review-item ${isCorrect ? "correct-ans" : "wrong-ans"}`;
+        const userAnsText = userAnswers[i] !== null ? q.options[userAnswers[i]] : "Tidak Dijawab";
+        const correctAnsText = q.options[q.ans];
+        item.innerHTML = `<div class="review-q">${i + 1}. ${escapeHtml(q.q)}</div><div class="review-a">Jawabanmu: <strong style="color:${isCorrect ? "#10b981" : "#ef4444"}">${escapeHtml(userAnsText)}</strong></div>${!isCorrect ? `<div class="review-a">Kunci: <strong>${escapeHtml(correctAnsText)}</strong></div>` : ""}<div class="review-exp"><strong>📚 Pembahasan Analisis:</strong> ${escapeHtml(q.exp)}</div>`;
+        reviewBox.appendChild(item);
     });
-    document.getElementById("exam-final-score").innerText = `Nilai Akhir Ujian Pro: ${score} / 100`; if (score >= 80) { addXP(100, "Lulus Ujian!"); if (typeof confetti !== 'undefined') confetti({ particleCount: 150, spread: 80 }); } else { addXP(30, "Ikut Ujian"); }
+    const finalScore = Math.round(score / currentExamQuestions.length * 100);
+    document.getElementById("exam-final-score").innerText = `Nilai Akhir Ujian Pro: ${finalScore} / 100`; if (finalScore >= 80) { addXP(100, "Lulus Ujian!"); if (typeof confetti !== 'undefined') confetti({ particleCount: 150, spread: 80 }); } else { addXP(30, "Ikut Ujian"); }
 }
 document.getElementById("btn-exam-retry").onclick = () => { document.getElementById("exam-result-box").classList.add("hidden-panel"); document.getElementById("exam-start-box").classList.remove("hidden-panel"); playSound('click'); };

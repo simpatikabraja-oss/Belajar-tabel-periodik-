@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tabel Periodik Interaktif SMA Pro</title>
-    <meta name="theme-color" content="#0a0b10">
+    <title>ChemLab Quest - Jelajah Tabel Periodik</title>
+    <meta name="description" content="Belajar 118 unsur kimia lewat tabel periodik interaktif, kuis seru, dan eksperimen virtual yang aman.">
+    <meta name="theme-color" content="#f5f7ff">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style/style.css">
 </head>
-<body class="dark-theme">
+<body class="light-theme">
     
     <div id="loader" class="loader-container">
         <div class="loader-content">
@@ -18,14 +19,14 @@
                 <div class="electron"></div><div class="electron"></div><div class="electron"></div>
                 <div class="nucleus"></div>
             </div>
-            <h1 class="loader-title">TABEL PERIODIK PRO</h1>
-            <p style="color: var(--text-secondary); font-size: 0.85rem;">Edisi Lengkap Kimia SMA</p>
+            <h1 class="loader-title">CHEMLAB QUEST</h1>
+            <p style="color: var(--text-secondary); font-size: 0.85rem;">Petualangan seru mengenal unsur kimia</p>
         </div>
     </div>
 
     <header>
         <div class="logo-area">
-            <h2>CHEM<span>LAB PRO</span></h2>
+            <h2>CHEM<span>LAB QUEST</span></h2>
         </div>
         
         <div class="user-stats">
@@ -41,6 +42,7 @@
             <button id="btn-mode-belajar" class="btn-nav">🧠 Belajar</button>
             <button id="btn-mode-kuis" class="btn-nav">🎮 Kuis Kilat</button>
             <button id="btn-mode-ujian" class="btn-nav" style="color: #facc15;">🎓 Ujian Pro</button>
+            <button id="btn-mode-soal" class="btn-nav">➕ Soal Saya</button>
             <button id="btn-mode-tren" class="btn-nav">📈 Tren</button>
             <button id="btn-mode-banding" class="btn-nav">⚖️ Banding</button>
             <button id="btn-mode-kalkulator" class="btn-nav">🧪 Kalkulator</button>
@@ -48,19 +50,47 @@
         </div>
         
         <div class="header-actions">
-            <button id="btn-export-pdf" class="btn-secondary btn-sm" onclick="window.print()">📄 PDF</button>
-            <button id="btn-export-png" class="btn-secondary btn-sm">📸 PNG</button>
+            <button id="btn-export-pdf" class="btn-secondary btn-sm" aria-label="Simpan tabel sebagai PDF" onclick="window.print()">📄 PDF</button>
+            <button id="btn-export-png" class="btn-secondary btn-sm" aria-label="Simpan tabel sebagai PNG">📸 PNG</button>
             <button id="btn-backup" class="btn-icon" title="Backup/Restore Data">💾</button>
-            <button id="theme-toggle" class="btn-icon">
+            <button id="theme-toggle" class="btn-icon" aria-label="Ganti tema">
                 <svg id="theme-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
             </button>
         </div>
     </header>
 
     <main class="container">
+        <section class="welcome-hero" aria-labelledby="welcome-title">
+            <div class="welcome-copy">
+                <p class="hero-eyebrow"><span class="hero-sparkle">✦</span> LAB KIMIA MINI • BELAJAR JADI SERU</p>
+                <h1 id="welcome-title">Kenalan dengan unsur,<br><span>jelajahi dunia sains!</span></h1>
+                <p class="hero-description">Dari hidrogen sampai oganesson, setiap unsur punya cerita. Klik kotaknya, temukan faktanya, lalu kumpulkan XP sambil belajar.</p>
+                <div class="hero-actions">
+                    <a class="hero-primary" href="#periodic-table">Jelajahi tabel <span aria-hidden="true">→</span></a>
+                    <button class="hero-secondary" id="hero-quiz-button" type="button"><span aria-hidden="true">🎮</span> Coba kuis</button>
+                </div>
+                <div class="hero-highlights" aria-label="Tentang tabel periodik">
+                    <span><strong>118</strong> unsur untuk ditemukan</span>
+                    <span><strong>10</strong> keluarga berwarna</span>
+                    <span><strong>∞</strong> hal baru untuk dipelajari</span>
+                </div>
+            </div>
+            <div class="hero-visual" aria-hidden="true">
+                <div class="orbit orbit-one"></div>
+                <div class="orbit orbit-two"></div>
+                <div class="orbit orbit-three"></div>
+                <div class="hero-nucleus">⚛</div>
+                <span class="orbit-element orbit-he">He</span>
+                <span class="orbit-element orbit-li">Li</span>
+                <span class="orbit-element orbit-c">C</span>
+                <span class="orbit-element orbit-ne">Ne</span>
+                <span class="hero-sticker">Sains itu<br>menyenangkan!</span>
+            </div>
+        </section>
+
         <section class="controls-panel">
             <div class="search-box">
-                <input type="text" id="search-input" placeholder="Cari unsur... Tekan [/] untuk fokus kilat" autocomplete="off">
+                <input type="text" id="search-input" aria-label="Cari unsur" placeholder="Cari unsur, simbol, atau nomor atom..." autocomplete="off">
                 <span class="search-icon">🔍</span>
                 <div id="search-suggestions" class="suggestions-box hidden"></div> 
             </div>
@@ -96,7 +126,7 @@
         </section>
 
         <section id="panel-kuis" class="sub-panel hidden-panel glassmorphism">
-            <h4>🎮 Kuis Kilat Tebak Unsur (Speedrun)</h4>
+            <h4>🎮 Kuis Kilat Kimia (Speedrun)</h4>
             <div id="quiz-start-box">
                 <p>Uji refleks hafalan unsurmu dengan batas waktu 20 detik per soal.</p>
                 <button id="start-quiz-btn" class="btn-primary" style="margin-top: 10px;">Mulai Kuis Kilat</button>
@@ -138,8 +168,55 @@
             </div>
         </section>
 
+        <section id="panel-soal" class="sub-panel hidden-panel glassmorphism">
+            <div class="question-manager-heading">
+                <div>
+                    <p class="section-eyebrow">KUIS DAN UJIANMU</p>
+                    <h3>Tambah soal sendiri</h3>
+                    <p>Soal yang kamu simpan bisa muncul di kuis kilat dan simulasi ujian pada perangkat ini.</p>
+                </div>
+                <strong class="question-count"><span id="custom-question-count">0</span> soal</strong>
+            </div>
+            <form id="custom-question-form" class="question-form">
+                <label class="question-field question-field-wide">Pertanyaan
+                    <textarea id="custom-question-text" rows="2" maxlength="500" placeholder="Contoh: Apa lambang kimia untuk emas?" required></textarea>
+                </label>
+                <label class="question-field">Pilihan A
+                    <input id="custom-option-a" maxlength="180" required>
+                </label>
+                <label class="question-field">Pilihan B
+                    <input id="custom-option-b" maxlength="180" required>
+                </label>
+                <label class="question-field">Pilihan C
+                    <input id="custom-option-c" maxlength="180" required>
+                </label>
+                <label class="question-field">Pilihan D
+                    <input id="custom-option-d" maxlength="180" required>
+                </label>
+                <label class="question-field">Jawaban benar
+                    <select id="custom-question-answer">
+                        <option value="0">A</option>
+                        <option value="1">B</option>
+                        <option value="2">C</option>
+                        <option value="3">D</option>
+                    </select>
+                </label>
+                <label class="question-field question-field-wide">Pembahasan
+                    <textarea id="custom-question-explanation" rows="2" maxlength="600" placeholder="Jelaskan mengapa jawaban ini benar." required></textarea>
+                </label>
+                <button class="btn-primary question-submit" type="submit">Simpan soal</button>
+            </form>
+            <div class="question-tools">
+                <button id="btn-export-questions" class="btn-secondary" type="button">📤 Ekspor soal</button>
+                <label class="question-import-button" for="import-questions-file">📥 Impor soal</label>
+                <input id="import-questions-file" type="file" accept=".json,application/json" hidden>
+                <span>Impor menambahkan soal dari file JSON tanpa menghapus soal yang sudah ada.</span>
+            </div>
+            <div id="custom-question-list" class="custom-question-list" aria-live="polite"></div>
+        </section>
+
         <section id="panel-tren" class="sub-panel hidden-panel glassmorphism">
-            <h4>📈 Grafik Tren Periodik Unsur (Periode 3)</h4>
+            <h4>📈 Grafik Garis Tren Periodik Unsur (Periode 3)</h4>
             <div class="trend-guide-box">
                 <h5>📖 Penjelasan Sifat: <span id="trend-title-display" style="color:#facc15;">Jari-Jari Atom</span></h5>
                 <div class="guide-item">
@@ -159,26 +236,50 @@
                 <button class="btn-chart-type" data-property="afinitas">Afinitas Elektron</button>
             </div>
             <div class="chart-container">
-                <div id="custom-bar-chart" class="bar-chart-visual"></div>
+                <div id="custom-bar-chart" class="line-chart-visual" role="img" aria-label="Grafik garis tren periodik unsur periode 3"></div>
             </div>
         </section>
 
         <section id="panel-kalkulator" class="sub-panel hidden-panel glassmorphism">
-            <h4>🧪 Kalkulator Kimia SMA (Konversi Molaritas & Mol)</h4>
-            <div class="calc-grid">
-                <div class="calc-inputs">
-                    <label style="display:block; margin-bottom:8px;">Pilih Unsur: <select id="calc-element-select" style="width:100%; margin-top:4px; padding: 10px; border-radius: 8px;"></select></label>
-                    <label style="display:block; margin-bottom:8px;">Masukkan Angka: <input type="number" id="calc-value" placeholder="Jumlah nilai zat..." style="width:100%; margin-top:4px; padding: 10px; border-radius: 8px;"></label>
-                    <label style="display:block; margin-bottom:8px;">Satuan Input: 
-                        <select id="calc-type" style="width:100%; margin-top:4px; padding: 10px; border-radius: 8px;">
-                            <option value="massa">Massa (Gram)</option>
-                            <option value="mol">Jumlah Mol (mol)</option>
-                            <option value="volume">Volume Gas STP (Liter)</option>
-                        </select>
-                    </label>
+            <h4>🧮 Kalkulator Ilmiah</h4>
+            <p class="calculator-description">Hitung ekspresi matematika dan saintek. Trigonometri tersedia dalam mode derajat atau radian.</p>
+            <div class="scientific-calculator">
+                <div class="calculator-display">
+                    <input id="calculator-expression" type="text" inputmode="decimal" aria-label="Ekspresi matematika" aria-describedby="calculator-help" placeholder="Contoh: sin(30) + 2^3" autocomplete="off">
+                    <output id="calculator-result" aria-live="polite">0</output>
                 </div>
-                <div class="calc-results" id="calc-output">
-                    <p style="color:var(--text-secondary);">Masukkan nilai angka pada kolom input untuk memulai hitungan otomatis.</p>
+                <p id="calculator-help" class="calculator-help">Gunakan tanda kurung untuk fungsi, misalnya sin(30). Perkalian seperti 2π juga didukung.</p>
+                <div class="calculator-keys" id="calculator-keys">
+                    <button type="button" class="calc-mode-key" data-action="angle">DEG</button>
+                    <button type="button" data-value="sin(">sin</button>
+                    <button type="button" data-value="cos(">cos</button>
+                    <button type="button" data-value="tan(">tan</button>
+                    <button type="button" class="calc-clear-key" data-action="clear">AC</button>
+                    <button type="button" data-value="log(">log</button>
+                    <button type="button" data-value="ln(">ln</button>
+                    <button type="button" data-value="sqrt(">√</button>
+                    <button type="button" data-value="^">xʸ</button>
+                    <button type="button" data-action="backspace">⌫</button>
+                    <button type="button" data-value="7">7</button>
+                    <button type="button" data-value="8">8</button>
+                    <button type="button" data-value="9">9</button>
+                    <button type="button" data-value="(">(</button>
+                    <button type="button" data-value=")">)</button>
+                    <button type="button" data-value="4">4</button>
+                    <button type="button" data-value="5">5</button>
+                    <button type="button" data-value="6">6</button>
+                    <button type="button" data-value="*">×</button>
+                    <button type="button" data-value="/">÷</button>
+                    <button type="button" data-value="1">1</button>
+                    <button type="button" data-value="2">2</button>
+                    <button type="button" data-value="3">3</button>
+                    <button type="button" data-value="+">+</button>
+                    <button type="button" data-value="-">−</button>
+                    <button type="button" data-value="0">0</button>
+                    <button type="button" data-value=".">.</button>
+                    <button type="button" data-value="pi">π</button>
+                    <button type="button" data-value="e">e</button>
+                    <button type="button" class="calc-equals-key" data-action="calculate">=</button>
                 </div>
             </div>
         </section>
@@ -200,6 +301,26 @@
             </div>
         </section>
 
+        <div class="table-heading" id="periodic-table">
+            <div>
+                <p class="section-eyebrow">PETA DUNIA KIMIA</p>
+                <h2>Yuk, pilih satu unsur!</h2>
+                <p>Tekan kotak berwarna untuk membuka kartu fakta dan mengenal atomnya.</p>
+            </div>
+            <span class="table-count">118 <strong>unsur</strong></span>
+        </div>
+        <div class="category-legend" aria-label="Legenda keluarga unsur">
+            <span class="legend-item legend-alkali"><i></i>Alkali</span>
+            <span class="legend-item legend-alkali-tanah"><i></i>Alkali tanah</span>
+            <span class="legend-item legend-transisi"><i></i>Transisi</span>
+            <span class="legend-item legend-pasca-transisi"><i></i>Pasca-transisi</span>
+            <span class="legend-item legend-metaloid"><i></i>Metaloid</span>
+            <span class="legend-item legend-nonlogam"><i></i>Nonlogam</span>
+            <span class="legend-item legend-halogen"><i></i>Halogen</span>
+            <span class="legend-item legend-gas-mulia"><i></i>Gas mulia</span>
+            <span class="legend-item legend-lantanida"><i></i>Lantanida</span>
+            <span class="legend-item legend-aktinida"><i></i>Aktinida</span>
+        </div>
         <section class="table-outer-container">
             <div class="zoom-controls">
                 <button id="btn-zoom-out" class="btn-icon">➖ Perkecil</button>
@@ -208,7 +329,7 @@
             </div>
             
             <div class="table-wrapper" id="capture-area">
-                <div id="periodic-table" class="periodic-grid"></div>
+                <div id="periodic-table-grid" class="periodic-grid" aria-label="Tabel periodik unsur interaktif"></div>
                 <div style="height: 25px;"></div>
                 <div id="f-block-table" class="f-block-grid"></div>
             </div>
@@ -302,7 +423,7 @@
     </div>
 
     <div id="toast-container"></div>
-    <footer class="app-footer"><p>&copy; 2026 ChemLab raja. Dibuat khusus untuk mempelajari tabel periodim unsur Kimia SMA.</p></footer>
+    <footer class="app-footer"><p>&copy; 2026 ChemLab Quest · Belajar kimia selangkah demi selangkah, satu unsur setiap kali.</p></footer>
 
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
