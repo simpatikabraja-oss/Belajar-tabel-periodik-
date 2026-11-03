@@ -145,7 +145,6 @@
                     <option value="f">Blok f</option>
                 </select>
                 <button id="btn-show-fav" class="btn-secondary">⭐ Favorit (<span id="fav-count">0</span>)</button>
-                <button id="btn-toggle-heatmap" class="btn-secondary">🌡️ Mode Heatmap</button>
                 <button id="btn-reset" class="btn-secondary">Reset</button>
             </div>
         </section>
@@ -364,8 +363,8 @@
             </div>
             
             <div class="table-wrapper" id="capture-area">
+                <img class="table-reference-image" src="img/periodic-table-space.jpg" alt="" aria-hidden="true" draggable="false">
                 <div id="periodic-table-grid" class="periodic-grid" aria-label="Tabel periodik unsur interaktif"></div>
-                <div style="height: 25px;"></div>
                 <div id="f-block-table" class="f-block-grid"></div>
             </div>
         </section>
@@ -383,33 +382,39 @@
                     <div id="m-weight" class="m-wgt"></div>
                 </div>
                 <div class="modal-details-info">
-                    <div class="header-modal-title"><h2 id="detail-title-id">-</h2><p class="latin-name">Nama Alias: <em id="detail-title-en">-</em></p></div>
+                    <div class="header-modal-title"><h2 id="detail-title-id">-</h2><p class="latin-name">Nama Inggris: <em id="detail-title-en">-</em></p></div>
                     
                     <div class="info-grid">
-                        <div class="info-item"><span>Golongan/Periode:</span> <strong id="d-group-period">-</strong></div>
-                        <div class="info-item"><span>Kulit Utama (Bohr):</span> <strong id="d-config">-</strong></div>
-                        <div class="info-item"><span>Konfigurasi Subkulit:</span> <strong id="d-orbital">-</strong></div>
-                        <div class="info-item"><span>Bil. Kuantum Terakhir:</span> <strong id="d-kuantum">-</strong></div>
-                        <div class="info-item"><span>Isotop Terkenal:</span> <strong id="d-isotope">-</strong></div>
-                        <div class="info-item"><span>Elektron Valensi:</span> <strong id="d-valensi">-</strong></div>
-                        <div class="info-item"><span>Bilangan Oksidasi:</span> <strong id="d-biloks">-</strong></div>
-                        <div class="info-item"><span>Wujud Suhu Kamar:</span> <strong id="d-wujud">-</strong></div>
+                        <div class="info-item"><span>Nomor atom</span><strong id="d-atomic-number">-</strong></div>
+                        <div class="info-item"><span>Proton</span><strong id="d-protons">-</strong></div>
+                        <div class="info-item"><span>Elektron (atom netral)</span><strong id="d-electrons">-</strong></div>
+                        <div class="info-item"><span>Perkiraan neutron*</span><strong id="d-neutrons">-</strong></div>
+                        <div class="info-item"><span>Massa atom relatif (Ar)</span><strong id="d-atomic-mass">-</strong></div>
+                        <div class="info-item"><span>Golongan • Periode • Blok</span><strong id="d-group-period">-</strong></div>
+                        <div class="info-item"><span>Keluarga unsur</span><strong id="d-category">-</strong></div>
+                        <div class="info-item"><span>Wujud pada suhu kamar</span><strong id="d-wujud">-</strong></div>
+                        <div class="info-item"><span>Radioaktivitas</span><strong id="d-radioactivity">-</strong></div>
+                        <div class="info-item"><span>Elektron kulit terluar (model Bohr)</span><strong id="d-valensi">-</strong></div>
+                        <div class="info-item"><span>Jari-jari atom (pm; nilai tabel)</span><strong id="d-radius">-</strong></div>
+                        <div class="info-item"><span>Energi ionisasi pertama (kJ/mol)</span><strong id="d-ionization">-</strong></div>
+                        <div class="info-item"><span>Elektronegativitas (skala Pauling)</span><strong id="d-electronegativity">-</strong></div>
+                        <div class="info-item info-item-wide"><span>Perkiraan konfigurasi elektron (model Aufbau)</span><strong id="d-orbital">-</strong></div>
+                        <div class="info-item info-item-wide"><span>Distribusi elektron per kulit</span><strong id="d-config">-</strong></div>
                     </div>
 
                     <div class="info-block">
-                        <h5 style="color: #10b981; margin-bottom: 8px;">📥 Pengisian Kotak Orbital (Aturan Hund)</h5>
+                        <h5 style="color: #10b981; margin-bottom: 8px;">Pengisian orbital (model Aufbau)</h5>
                         <div id="orbital-visualizer" class="orbital-box-container"></div>
                     </div>
 
                     <div class="bohr-model-container">
-                        <h5 style="color: #60a5fa; margin-bottom: 5px;">⚛️ Lintasan Model Bohr</h5>
+                        <h5 style="color: #60a5fa; margin-bottom: 5px;">Visualisasi kulit elektron (model Bohr)</h5>
                         <div class="bohr-canvas-area"><div id="bohr-visual" class="bohr-atom"><div class="bohr-nucleus"></div></div></div>
                         <p id="bohr-text-summary" class="bohr-desc"></p>
                     </div>
                     
-                    <div class="info-block mnemonic-block"><h5>🧠 Jembatan Keledai:</h5><p id="d-mnemonic">-</p></div>
-                    <div class="info-block hazard-block"><h5>⚠️ Bahaya Lab & Toksisitas:</h5><p id="d-hazard">-</p></div>
-                    <div class="personal-notes"><h5>📝 Catatan Belajar:</h5><textarea id="user-note-input" placeholder="Tulis catatan hafalan di sini..."></textarea></div>
+                    <div class="info-block chemistry-property-block"><h5>Sifat kimia umum</h5><p id="d-chemistry">-</p></div>
+                    <p class="element-data-note">*Jumlah neutron hanya perkiraan dari massa atom yang dibulatkan; isotop berbeda dapat memiliki jumlah neutron berbeda. Elektron kulit terluar tidak selalu sama dengan total elektron valensi, terutama pada logam transisi. Konfigurasi unsur berat dapat menyimpang dari model Aufbau. Nilai sifat periodik mengikuti data tabel dan dapat berbeda menurut metode pengukuran.</p>
                 </div>
             </div>
         </div>

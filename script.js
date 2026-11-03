@@ -129,7 +129,6 @@ const trendExplanations = {
 };
 
 const elementsData = [];
-let isHeatmapActive = false; let currentSelectedProperty = "radius";
 let userXP = parseInt(localStorage.getItem("chem_xp")) || 0; let userLevel = 1;
 let discoveredElements = JSON.parse(localStorage.getItem("chem_discovered_elements")) || [];
 let discoveredCompounds = JSON.parse(localStorage.getItem("chem_discovered_compounds")) || [];
@@ -143,7 +142,26 @@ function updateGamificationUI(isInitialLoad = false) {
     userLevel = stats.level; document.getElementById("user-level").innerText = `Lvl ${stats.level}`; document.getElementById("user-xp").innerText = stats.current; document.getElementById("next-level-xp").innerText = stats.next; document.getElementById("user-rank").innerText = stats.rank; document.getElementById("xp-bar").style.width = `${(stats.current / stats.next) * 100}%`;
 }
 function addXP(amount, reason) { userXP += amount; localStorage.setItem("chem_xp", userXP); updateGamificationUI(); showToast(`+${amount} XP (${reason})`, ''); }
-function showToast(message, extraClass) { const container = document.getElementById("toast-container"); if(!container) return; const toast = document.createElement("div"); toast.className = `xp-toast ${extraClass}`; toast.innerHTML = extraClass.includes('lvl-up') ? message : `<span>✨</span> ${message}`; container.appendChild(toast); setTimeout(() => toast.remove(), 3000); }
+function showToast(message, extraClass) {
+    const container = document.getElementById("toast-container");
+    if (!container) return;
+
+    const isLevelUp = extraClass.includes("lvl-up");
+    const existingToast = container.querySelector(isLevelUp ? ".lvl-up-toast" : ".xp-toast:not(.lvl-up-toast)");
+    const toast = existingToast || document.createElement("div");
+    clearTimeout(toast.dismissTimer);
+    toast.className = `xp-toast ${extraClass}`;
+    if (isLevelUp) {
+        toast.innerHTML = message;
+    } else {
+        toast.replaceChildren();
+        const icon = document.createElement("span");
+        icon.textContent = "✨";
+        toast.append(icon, document.createTextNode(` ${message}`));
+    }
+    if (!existingToast) container.appendChild(toast);
+    toast.dismissTimer = setTimeout(() => toast.remove(), 3000);
+}
 
 const AudioContext = window.AudioContext || window.webkitAudioContext; let audioCtx;
 function initAudio() { if(!audioCtx) audioCtx = new AudioContext(); if(audioCtx.state === 'suspended') audioCtx.resume(); }
@@ -167,6 +185,89 @@ function getElementBlock(atomNum) {
     return "s";
 }
 
+const electronSubshellOrder = [
+    { name: "1s", capacity: 2 }, { name: "2s", capacity: 2 }, { name: "2p", capacity: 6 },
+    { name: "3s", capacity: 2 }, { name: "3p", capacity: 6 }, { name: "4s", capacity: 2 },
+    { name: "3d", capacity: 10 }, { name: "4p", capacity: 6 }, { name: "5s", capacity: 2 },
+    { name: "4d", capacity: 10 }, { name: "5p", capacity: 6 }, { name: "6s", capacity: 2 },
+    { name: "4f", capacity: 14 }, { name: "5d", capacity: 10 }, { name: "6p", capacity: 6 },
+    { name: "7s", capacity: 2 }, { name: "5f", capacity: 14 }, { name: "6d", capacity: 10 },
+    { name: "7p", capacity: 6 }
+];
+
+const electronConfigurationAdjustments = {
+    24: { "3d": 1, "4s": -1 }, 29: { "3d": 1, "4s": -1 },
+    41: { "4d": 1, "5s": -1 }, 42: { "4d": 1, "5s": -1 },
+    44: { "4d": 1, "5s": -1 }, 45: { "4d": 1, "5s": -1 },
+    46: { "4d": 2, "5s": -2 }, 47: { "4d": 1, "5s": -1 },
+    57: { "4f": -1, "5d": 1 }, 58: { "4f": -1, "5d": 1 },
+    64: { "4f": -1, "5d": 1 }, 78: { "5d": 1, "6s": -1 },
+    79: { "5d": 1, "6s": -1 }, 89: { "5f": -1, "6d": 1 },
+    90: { "5f": -2, "6d": 2 }, 91: { "5f": -1, "6d": 1 },
+    92: { "5f": -1, "6d": 1 }, 93: { "5f": -1, "6d": 1 },
+    96: { "5f": -1, "6d": 1 }, 103: { "6d": -1, "7p": 1 }
+};
+
+function getElectronConfiguration(atomicNumber) {
+    const occupancy = Object.fromEntries(electronSubshellOrder.map(subshell => [subshell.name, 0]));
+    let remaining = atomicNumber;
+    for (const subshell of electronSubshellOrder) {
+        const electrons = Math.min(remaining, subshell.capacity);
+        occupancy[subshell.name] = electrons;
+        remaining -= electrons;
+        if (remaining === 0) break;
+    }
+    for (const [subshell, adjustment] of Object.entries(electronConfigurationAdjustments[atomicNumber] || {})) {
+        occupancy[subshell] += adjustment;
+    }
+    return electronSubshellOrder
+        .filter(subshell => occupancy[subshell.name] > 0)
+        .map(subshell => ({ name: subshell.name, electrons: occupancy[subshell.name] }));
+}
+
+const elementCategoryDetails = {
+    alkali: {
+        label: "Logam alkali",
+        chemistry: "Logam golongan 1 yang umumnya sangat reaktif dan cenderung membentuk ion bermuatan +1. Hidrogen berada di golongan 1, tetapi merupakan nonlogam dan memiliki sifat khusus."
+    },
+    "alkali-tanah": {
+        label: "Logam alkali tanah",
+        chemistry: "Logam golongan 2 yang umumnya membentuk ion +2. Reaktif, tetapi secara umum tidak sereaktif logam alkali."
+    },
+    transisi: {
+        label: "Logam transisi",
+        chemistry: "Unsur blok d; banyak yang memiliki lebih dari satu bilangan oksidasi dan dapat membentuk senyawa atau ion berwarna. Sifat tiap unsur tetap berbeda."
+    },
+    "pasca-transisi": {
+        label: "Logam pasca-transisi",
+        chemistry: "Kelompok logam di sisi kanan blok d. Sifat fisik dan kimianya beragam; istilah ini merupakan pengelompokan umum, bukan satu aturan reaksi."
+    },
+    metaloid: {
+        label: "Metaloid",
+        chemistry: "Memiliki beberapa sifat antara logam dan nonlogam. Sejumlah metaloid penting sebagai semikonduktor; sifatnya bergantung pada struktur dan kondisi."
+    },
+    nonlogam: {
+        label: "Nonlogam",
+        chemistry: "Sifatnya beragam. Nonlogam dapat berbagi elektron dalam ikatan kovalen atau membentuk ion negatif; hidrogen memiliki perilaku kimia yang khas."
+    },
+    halogen: {
+        label: "Halogen",
+        chemistry: "Keluarga golongan 17. Halogen umumnya reaktif dan cenderung menerima satu elektron dalam senyawa ionik; perilaku unsur berat dapat berbeda dan belum seluruhnya terukur."
+    },
+    "gas-mulia": {
+        label: "Gas mulia",
+        chemistry: "Keluarga golongan 18. Gas mulia umumnya kurang reaktif karena kulit valensinya penuh; beberapa unsur berat dapat membentuk senyawa dalam kondisi tertentu."
+    },
+    lantanida: {
+        label: "Lantanida",
+        chemistry: "Deret blok f (4f), sering disebut unsur tanah jarang. Keadaan oksidasi +3 umum dijumpai, tetapi bukan satu-satunya keadaan untuk seluruh anggotanya."
+    },
+    aktinida: {
+        label: "Aktinida",
+        chemistry: "Deret blok f (5f). Semua aktinida bersifat radioaktif; keadaan oksidasinya dapat beragam, dan banyak anggotanya dibuat secara sintetis."
+    }
+};
+
 function mapIUPACCoordinatesAndParse() {
     rawElementsArray.forEach(row => {
         const atomNum = row[0]; let p = Math.ceil(atomNum / 18); let g = atomNum % 18 === 0 ? 18 : atomNum % 18;
@@ -176,13 +277,21 @@ function mapIUPACCoordinatesAndParse() {
         if (atomNum >= 57 && atomNum <= 71) { p = 6; g = atomNum - 54; } if (atomNum >= 72 && atomNum <= 86) { p = 6; g = atomNum - 68; }
         if (atomNum >= 87 && atomNum <= 88) { p = 7; g = atomNum - 86; } if (atomNum >= 89 && atomNum <= 103) { p = 7; g = atomNum - 86; } if (atomNum >= 104 && atomNum <= 118) { p = 7; g = atomNum - 100; }
         let afn = p3TrendData[atomNum] ? p3TrendData[atomNum].afinitas : 0; let lgm = p3TrendData[atomNum] ? p3TrendData[atomNum].logam : 0;
-        elementsData.push({ num: atomNum, sym: row[1], name: row[2], weight: row[3], category: row[4], period: p, group: g, block: getElementBlock(atomNum), state: row[5], bohr: row[9], alias: row[10] || [], mnemonic: (atomNum === 11) ? "Nanti Kita Robohkan Candi Firaun" : "Belum ada", radius: row[6], ionisasi: row[7], elektronegatif: row[8], afinitas: afn, logam: lgm, orbital: hitungKonfigurasiOrbital(atomNum), kuantum: "Aturan Hund & Pauli", isotope: atomNum === 6 ? "C-12 (Stabil)" : "Isotop Alami", hazard: row[4] === "alkali" ? "Sangat reaktif!" : "Aman lab standar.", valency: row[9][row[9].length - 1], biloks: atomNum === 1 ? "+1, -1" : row[4] === "gas-mulia" ? "0" : `+${row[9][row[9].length - 1]}`, use: `Materi SMA`, fact: `Padat/Cair/Gas.` });
+        const chemistry = elementCategoryDetails[row[4]];
+        elementsData.push({
+            num: atomNum, sym: row[1], name: row[2], weight: row[3], category: row[4],
+            period: p, group: g, block: getElementBlock(atomNum), state: row[5],
+            bohr: row[9], alias: row[10] || [], radius: row[6], ionisasi: row[7],
+            elektronegatif: row[8], afinitas: afn, logam: lgm,
+            orbital: getElectronConfiguration(atomNum), categoryLabel: chemistry.label,
+            chemistry: chemistry.chemistry,
+            radioactive: atomNum === 43 || atomNum === 61 || atomNum >= 84
+        });
     });
 }
-function hitungKonfigurasiOrbital(nomor) { const aufbau = [{n:"1s",m:2},{n:"2s",m:2},{n:"2p",m:6},{n:"3s",m:2},{n:"3p",m:6},{n:"4s",m:2},{n:"3d",m:10},{n:"4p",m:6},{n:"5s",m:2}]; let sisa = nomor; let hasil = []; for (let sub of aufbau) { if (sisa <= 0) break; let isi = Math.min(sisa, sub.m); hasil.push(`${sub.n}<sup>${isi}</sup>`); sisa -= isi; } return final = hasil.join(" "); }
 mapIUPACCoordinatesAndParse();
 
-let favorites = JSON.parse(localStorage.getItem("chem_favs")) || []; let personalNotes = JSON.parse(localStorage.getItem("chem_notes")) || {}; let quizActiveList = []; let quizCurrentIdx = 0; let quizScore = 0; let fcIdx = 0; let quizTimer;
+let favorites = JSON.parse(localStorage.getItem("chem_favs")) || []; let quizActiveList = []; let quizCurrentIdx = 0; let quizScore = 0; let fcIdx = 0; let quizTimer; let quizAnswerLocked = false;
 const mainGrid = document.getElementById("periodic-table-grid"); const fBlockGrid = document.getElementById("f-block-table"); const searchInput = document.getElementById("search-input"); const filterCat = document.getElementById("filter-category"); const filterGroup = document.getElementById("filter-group"); const filterPeriod = document.getElementById("filter-period"); const filterState = document.getElementById("filter-state"); const filterBlock = document.getElementById("filter-block");
 
 function openModalObj(modalElement) { modalElement.classList.add("open"); document.body.classList.add("modal-open"); }
@@ -256,19 +365,9 @@ function renderGrid() {
     elementsData.forEach(el => {
         const cell = document.createElement("div"); cell.className = `element-cell cat-${el.category}`; if (favorites.includes(el.num)) cell.classList.add("is-fav");
         cell.setAttribute("data-num", el.num); cell.setAttribute("data-sym", el.sym.toLowerCase()); cell.setAttribute("data-name", el.name.toLowerCase()); cell.setAttribute("data-category", el.category);
+        cell.setAttribute("role", "button"); cell.setAttribute("tabindex", "0"); cell.setAttribute("aria-label", `${el.name}, nomor atom ${el.num}, simbol ${el.sym}`); cell.title = `${el.name} (${el.sym})`;
         cell.innerHTML = `<span class="cell-num">${el.num}</span><span class="cell-sym">${el.sym}</span><span class="cell-name">${el.name}</span><span class="cell-weight">${el.weight}</span><span class="cell-fav-indicator">⭐</span>`;
         if (el.category !== "lantanida" && el.category !== "aktinida") { cell.style.gridColumn = el.group; cell.style.gridRow = el.period; mainGrid.appendChild(cell); } else { fBlockGrid.appendChild(cell); }
-    });
-}
-
-function applyHeatmapEngine() {
-    if (!isHeatmapActive) { document.body.classList.remove("heatmap-active"); document.querySelectorAll(".element-cell").forEach(cell => cell.style.background = ""); return; }
-    document.body.classList.add("heatmap-active"); const validValues = elementsData.map(e => e[currentSelectedProperty]).filter(v => v > 0);
-    const maxVal = Math.max(...validValues); const minVal = Math.min(...validValues);
-    document.querySelectorAll(".element-cell").forEach(cell => {
-        const num = parseInt(cell.getAttribute("data-num")); const el = elementsData.find(x => x.num === num); if (!el) return;
-        const currentVal = el[currentSelectedProperty]; if (currentVal === 0) { cell.style.background = "#131525"; return; }
-        const ratio = (currentVal - minVal) / (maxVal - minVal || 1); const hue = 240 - (ratio * 240); cell.style.background = `hsla(${hue}, 85%, 45%, 0.85)`;
     });
 }
 
@@ -310,19 +409,22 @@ function setupCoreEvents() {
     filterPeriod.addEventListener("change", () => { searchInput.value = ""; if(searchSugg) searchSugg.classList.add("hidden"); filterEngine(); playSound('click'); });
     filterState.addEventListener("change", () => { searchInput.value = ""; if(searchSugg) searchSugg.classList.add("hidden"); filterEngine(); playSound('click'); });
     filterBlock.addEventListener("change", () => { searchInput.value = ""; if(searchSugg) searchSugg.classList.add("hidden"); filterEngine(); playSound('click'); });
-    document.getElementById("btn-reset").addEventListener("click", () => { searchInput.value = ""; filterCat.value = "all"; filterGroup.value = "all"; filterPeriod.value = "all"; filterState.value = "all"; filterBlock.value = "all"; isHeatmapActive = false; document.getElementById("btn-toggle-heatmap").classList.remove("active"); document.body.classList.remove("heatmap-active"); document.getElementById("btn-show-fav").classList.remove("active"); document.querySelectorAll(".sub-panel").forEach(p => p.classList.add("hidden-panel")); document.querySelectorAll(".btn-nav").forEach(b => b.classList.remove("active")); document.querySelectorAll(".element-cell").forEach(cell => { cell.classList.remove("dimmed"); cell.style.background = ""; }); document.getElementById("btn-zoom-reset").click(); playSound('click'); });
+    document.getElementById("btn-reset").addEventListener("click", () => { searchInput.value = ""; filterCat.value = "all"; filterGroup.value = "all"; filterPeriod.value = "all"; filterState.value = "all"; filterBlock.value = "all"; document.getElementById("btn-show-fav").classList.remove("active"); document.querySelectorAll(".sub-panel").forEach(p => p.classList.add("hidden-panel")); document.querySelectorAll(".btn-nav").forEach(b => b.classList.remove("active")); document.querySelectorAll(".element-cell").forEach(cell => cell.classList.remove("dimmed")); document.getElementById("btn-zoom-reset").click(); playSound('click'); });
     document.getElementById("btn-show-fav").addEventListener("click", (e) => { e.target.classList.toggle("active"); filterEngine(); playSound('click'); });
-    
-    document.getElementById("btn-toggle-heatmap").addEventListener("click", (e) => { 
-        isHeatmapActive = !isHeatmapActive; e.target.classList.toggle("active", isHeatmapActive); applyHeatmapEngine(); playSound('click'); 
-        if(isHeatmapActive && !localStorage.getItem("chem_heatmap_used")) { addXP(10, "Aktivasi Pertama Mode Heatmap"); localStorage.setItem("chem_heatmap_used", "true"); } 
-    });
     
     window.addEventListener("click", (e) => { if (e.target.classList.contains("modal")) closeAllModals(); });
     document.querySelectorAll(".close-button, .close-flashcard, .close-compare, .close-backup").forEach(btn => { btn.addEventListener("click", () => { closeAllModals(); playSound('click'); }); });
     document.body.addEventListener("click", e => { const cell = e.target.closest(".element-cell"); if (cell) { bukaModalUnsur(parseInt(cell.getAttribute("data-num"))); playSound('click'); } });
 
     document.querySelectorAll(".btn-nav").forEach(btn => btn.addEventListener("click", () => playSound('click')));
+    document.body.addEventListener("keydown", e => {
+        const cell = e.target.closest(".element-cell");
+        if (cell && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            bukaModalUnsur(parseInt(cell.getAttribute("data-num")));
+            playSound("click");
+        }
+    });
     document.getElementById("btn-mode-belajar").addEventListener("click", (e) => toggleSubPanel(document.getElementById("panel-belajar"), e.target));
     document.getElementById("btn-mode-kuis").addEventListener("click", (e) => toggleSubPanel(document.getElementById("panel-kuis"), e.target));
     document.getElementById("btn-mode-tren").addEventListener("click", (e) => toggleSubPanel(document.getElementById("panel-tren"), e.target));
@@ -367,7 +469,7 @@ function setupCoreEvents() {
         }).catch(() => { showToast("Gagal export PNG.", ""); }); 
     });
     
-    document.querySelectorAll(".btn-chart-type").forEach(btn => { btn.addEventListener("click", (e) => { document.querySelectorAll(".btn-chart-type").forEach(b => b.classList.remove("active")); e.target.classList.add("active"); const prop = e.target.getAttribute("data-property"); currentSelectedProperty = prop; renderChart(prop); applyHeatmapEngine(); const info = trendExplanations[prop]; document.getElementById("trend-title-display").innerText = info.title; document.getElementById("trend-title-display").style.color = info.color; document.getElementById("trend-icon-display").innerText = info.icon; document.getElementById("trend-text-display").innerHTML = info.text; playSound('click'); }); });
+    document.querySelectorAll(".btn-chart-type").forEach(btn => { btn.addEventListener("click", (e) => { document.querySelectorAll(".btn-chart-type").forEach(b => b.classList.remove("active")); e.target.classList.add("active"); const prop = e.target.getAttribute("data-property"); renderChart(prop); const info = trendExplanations[prop]; document.getElementById("trend-title-display").innerText = info.title; document.getElementById("trend-title-display").style.color = info.color; document.getElementById("trend-icon-display").innerText = info.icon; document.getElementById("trend-text-display").innerHTML = info.text; playSound('click'); }); });
     setupFlashcardEngine();
 }
 
@@ -381,18 +483,38 @@ function renderBohrModel(shells) {
 }
 
 function renderOrbitalBoxes(atomicNumber) {
-    const container = document.getElementById("orbital-visualizer"); if(!container) return; container.innerHTML = ""; 
-    const orbitalStructure = [ {n: "1s", b: 1, c: 2}, {n: "2s", b: 1, c: 2}, {n: "2p", b: 3, c: 6}, {n: "3s", b: 1, c: 2}, {n: "3p", b: 3, c: 6}, {n: "4s", b: 1, c: 2}, {n: "3d", b: 5, c: 10}, {n: "4p", b: 3, c: 6}, {n: "5s", b: 1, c: 2} ];
-    let remainingElectrons = atomicNumber; let delayCounter = 0;
-    for (let shell of orbitalStructure) {
-        if (remainingElectrons <= 0) break; let electronsInShell = Math.min(remainingElectrons, shell.c); remainingElectrons -= electronsInShell;
-        const groupDiv = document.createElement("div"); groupDiv.className = "subshell-group"; groupDiv.innerHTML = `<span class="subshell-label">${shell.n}</span>`;
-        const boxesDiv = document.createElement("div"); boxesDiv.className = "subshell-boxes"; let boxes = [];
-        for (let i = 0; i < shell.b; i++) { const box = document.createElement("div"); box.className = "orbital-box"; boxes.push(box); boxesDiv.appendChild(box); }
-        let elCount = 0;
-        for (let i = 0; i < shell.b; i++) { if (elCount < electronsInShell) { const arrowUp = document.createElement("span"); arrowUp.className = "electron-arrow arrow-up"; arrowUp.innerHTML = "↿"; boxes[i].appendChild(arrowUp); setTimeout(() => arrowUp.classList.add("show"), delayCounter * 150); delayCounter++; elCount++; } }
-        for (let i = 0; i < shell.b; i++) { if (elCount < electronsInShell) { const arrowDown = document.createElement("span"); arrowDown.className = "electron-arrow arrow-down"; arrowDown.innerHTML = "⇂"; boxes[i].appendChild(arrowDown); setTimeout(() => arrowDown.classList.add("show"), delayCounter * 150); delayCounter++; elCount++; } }
-        groupDiv.appendChild(boxesDiv); container.appendChild(groupDiv);
+    const container = document.getElementById("orbital-visualizer");
+    if (!container) return;
+    container.replaceChildren();
+    const subshellCapacities = { s: 2, p: 6, d: 10, f: 14 };
+    for (const subshell of getElectronConfiguration(atomicNumber)) {
+        const orbitalCount = subshellCapacities[subshell.name.slice(-1)] / 2;
+        const group = document.createElement("div");
+        group.className = "subshell-group";
+        const label = document.createElement("span");
+        label.className = "subshell-label";
+        label.textContent = subshell.name;
+        const boxes = document.createElement("div");
+        boxes.className = "subshell-boxes";
+        group.append(label, boxes);
+        for (let orbitalIndex = 0; orbitalIndex < orbitalCount; orbitalIndex++) {
+            const box = document.createElement("div");
+            box.className = "orbital-box";
+            if (orbitalIndex < subshell.electrons) {
+                const spinUp = document.createElement("span");
+                spinUp.className = "electron-arrow arrow-up show";
+                spinUp.textContent = "↿";
+                box.appendChild(spinUp);
+            }
+            if (orbitalIndex + orbitalCount < subshell.electrons) {
+                const spinDown = document.createElement("span");
+                spinDown.className = "electron-arrow arrow-down show";
+                spinDown.textContent = "⇂";
+                box.appendChild(spinDown);
+            }
+            boxes.appendChild(box);
+        }
+        container.appendChild(group);
     }
 }
 
@@ -400,8 +522,43 @@ function bukaModalUnsur(atomNum) {
     const el = elementsData.find(x => x.num === atomNum); if (!el) return;
     if (!discoveredElements.includes(atomNum)) { addXP(5, "Eksplorasi Unsur Baru"); discoveredElements.push(atomNum); localStorage.setItem("chem_discovered_elements", JSON.stringify(discoveredElements)); }
     const modal = document.getElementById("element-modal"); document.getElementById("modal-card-display").className = `modal-card-view cat-${el.category}`;
-    document.getElementById("m-atomic-num").innerText = el.num; document.getElementById("m-symbol").innerText = el.sym; document.getElementById("m-name").innerText = el.name; document.getElementById("m-weight").innerText = `Ar ${el.weight}`; document.getElementById("detail-title-id").innerText = el.name; document.getElementById("detail-title-en").innerText = el.alias[0] || "-"; document.getElementById("d-mnemonic").innerText = el.mnemonic; document.getElementById("d-hazard").innerText = el.hazard; document.getElementById("d-group-period").innerText = `Golongan ${el.group}, Periode ${el.period}`; document.getElementById("d-config").innerText = `Kulit Bohr (n): ${el.bohr.length}`; document.getElementById("d-orbital").innerHTML = el.orbital; document.getElementById("d-kuantum").innerText = el.kuantum; document.getElementById("d-isotope").innerText = el.isotope; document.getElementById("d-valensi").innerText = el.valency; document.getElementById("d-biloks").innerText = el.biloks; document.getElementById("d-wujud").innerText = el.state === "G" ? "Gas" : el.state === "L" ? "Cair" : "Padat";
-    const noteArea = document.getElementById("user-note-input"); noteArea.value = personalNotes[el.num] || ""; noteArea.oninput = (e) => { personalNotes[el.num] = e.target.value; localStorage.setItem("chem_notes", JSON.stringify(personalNotes)); };
+    const category = elementCategoryDetails[el.category];
+    const stateLabel = el.num >= 104
+        ? "Diperkirakan; belum terkonfirmasi"
+        : el.state === "G" ? "Gas" : el.state === "L" ? "Cair" : "Padat";
+    const groupLabel = el.category === "lantanida" || el.category === "aktinida"
+        ? `Deret f · Periode ${el.period} · blok f`
+        : `Golongan ${el.group} · Periode ${el.period} · blok ${el.block}`;
+    document.getElementById("m-atomic-num").textContent = el.num;
+    document.getElementById("m-symbol").textContent = el.sym;
+    document.getElementById("m-name").textContent = el.name;
+    document.getElementById("m-weight").textContent = `Ar ${el.weight}`;
+    document.getElementById("detail-title-id").textContent = el.name;
+    document.getElementById("detail-title-en").textContent = el.alias[0] || "Tidak tersedia";
+    document.getElementById("d-atomic-number").textContent = el.num;
+    document.getElementById("d-protons").textContent = el.num;
+    document.getElementById("d-electrons").textContent = el.num;
+    document.getElementById("d-neutrons").textContent = Math.max(0, Math.round(el.weight) - el.num);
+    document.getElementById("d-atomic-mass").textContent = el.weight;
+    document.getElementById("d-group-period").textContent = groupLabel;
+    document.getElementById("d-category").textContent = category.label;
+    document.getElementById("d-wujud").textContent = stateLabel;
+    document.getElementById("d-radioactivity").textContent = el.radioactive
+        ? "Radioaktif; tidak memiliki isotop stabil"
+        : "Memiliki isotop stabil";
+    document.getElementById("d-valensi").textContent = `${el.bohr[el.bohr.length - 1]} elektron`;
+    document.getElementById("d-radius").textContent = `${el.radius} pm`;
+    document.getElementById("d-ionization").textContent = el.ionisasi > 0
+        ? `${el.ionisasi} kJ/mol`
+        : "Tidak tersedia";
+    document.getElementById("d-electronegativity").textContent = el.elektronegatif > 0
+        ? el.elektronegatif
+        : "Tidak tersedia";
+    document.getElementById("d-orbital").innerHTML = el.orbital
+        .map(subshell => `${subshell.name}<sup>${subshell.electrons}</sup>`)
+        .join(" ");
+    document.getElementById("d-config").textContent = el.bohr.join(" • ");
+    document.getElementById("d-chemistry").textContent = category.chemistry;
     const favBtn = document.getElementById("modal-fav-btn"); favBtn.classList.toggle("active", favorites.includes(el.num));
     favBtn.onclick = () => { const gridCell = document.querySelector(`.element-cell[data-num="${el.num}"]`); if (favorites.includes(el.num)) { favorites = favorites.filter(id => id !== el.num); if(gridCell) gridCell.classList.remove("is-fav"); } else { favorites.push(el.num); if(gridCell) gridCell.classList.add("is-fav"); } localStorage.setItem("chem_favs", JSON.stringify(favorites)); favBtn.classList.toggle("active", favorites.includes(el.num)); playSound('click'); updateFavButtonDisplay(); filterEngine(); };
     renderBohrModel(el.bohr); renderOrbitalBoxes(el.num); openModalObj(modal); 
@@ -650,6 +807,7 @@ function startQuizEngine() {
 
 function loadQuizQuestion() {
     clearInterval(quizTimer);
+    quizAnswerLocked = false;
     if (quizCurrentIdx >= quizActiveList.length) {
         document.getElementById("quiz-question-text").innerText = `Kuis Selesai! Skor Akhir: ${quizScore * 10}`;
         document.getElementById("quiz-options").innerHTML = `<button class="btn-primary" onclick="startQuizEngine()">Ulangi Kuis</button>`;
@@ -667,7 +825,8 @@ function loadQuizQuestion() {
             loadQuizQuestion();
         }
     }, 1000);
-    const question = quizActiveList[quizCurrentIdx];
+    const questionIndex = quizCurrentIdx;
+    const question = quizActiveList[questionIndex];
     document.getElementById("quiz-question-text").innerText = question.q;
     const optionsGrid = document.getElementById("quiz-options");
     optionsGrid.innerHTML = "";
@@ -676,6 +835,11 @@ function loadQuizQuestion() {
         button.className = "quiz-opt";
         button.innerText = option;
         button.onclick = () => {
+            if (quizAnswerLocked || quizCurrentIdx !== questionIndex) return;
+            quizAnswerLocked = true;
+            optionsGrid.querySelectorAll(".quiz-opt").forEach(optionButton => {
+                optionButton.disabled = true;
+            });
             if (index === question.ans) {
                 quizScore++;
                 playSound("correct");
